@@ -120,6 +120,34 @@ module.exports = async (req, res) => {
       return;
     }
 
+    /* ── BUCKET-INFO — espace réel du bucket ── */
+    if (action === 'bucket-info') {
+      // Liste tous les fichiers du bucket pour calculer la taille totale
+      let totalSize = 0;
+      let fileCount = 0;
+      let nextFileName = null;
+      do {
+        const body = { bucketId: bid, maxFileCount: 1000 };
+        if (nextFileName) body.startFileName = nextFileName;
+        const r = await fetch(`${a.apiUrl}/b2api/v2/b2_list_file_names`, {
+          method: 'POST',
+          headers: { Authorization: a.authorizationToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const d = await r.json();
+        if (d.files) {
+          d.files.forEach(f => { totalSize += f.contentLength || 0; fileCount++; });
+        }
+        nextFileName = d.nextFileName || null;
+      } while (nextFileName);
+
+      const usedMB = Math.round(totalSize / 1024 / 1024 * 10) / 10;
+      // B2 free tier: 10 GB
+      const limitMB = 10 * 1024;
+      res.status(200).json({ usedMB, limitMB, fileCount, usedBytes: totalSize });
+      return;
+    }
+
     /* ── UPLOAD-CREDS ── */
     if (action === 'upload-creds') {
       const up = await getUploadUrl(a, bid);
