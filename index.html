@@ -437,6 +437,58 @@
   </div>
 </div>
 
+<!-- STOCKAGE -->
+<div id="s-storage" class="screen hidden">
+  <div style="padding:calc(var(--safe-t)+18px) 20px 4px;display:flex;align-items:center;justify-content:space-between;">
+    <span class="home-title">Stockage</span>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px 16px var(--scroll-pb);-webkit-overflow-scrolling:touch;">
+    <div style="background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--sh2);">
+      <p style="font-size:13px;color:var(--sub);margin-bottom:8px;">Cache utilisé</p>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px;">
+        <span id="storage-cache" style="font-size:32px;font-weight:800;color:var(--text);">0</span>
+        <span style="font-size:14px;color:var(--sub);">MB / 500 MB</span>
+      </div>
+      <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;">
+        <div id="storage-bar" style="height:100%;background:var(--acc);border-radius:3px;width:0%;transition:width .4s;"></div>
+      </div>
+    </div>
+    <div style="background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--sh2);">
+      <p style="font-size:13px;color:var(--sub);margin-bottom:6px;">Bibliothèque</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <p id="storage-tracks-count" style="font-size:22px;font-weight:800;color:var(--text);">0</p>
+          <p style="font-size:12px;color:var(--sub);">titres</p>
+        </div>
+        <div>
+          <p id="storage-cache-count" style="font-size:22px;font-weight:800;color:var(--acc);">0</p>
+          <p style="font-size:12px;color:var(--sub);">en cache</p>
+        </div>
+        <div>
+          <p id="storage-used" style="font-size:22px;font-weight:800;color:var(--orange);">0</p>
+          <p style="font-size:12px;color:var(--sub);">MB utilisés</p>
+        </div>
+      </div>
+    </div>
+    <button onclick="clearAllCache()" style="width:100%;background:var(--card);border:1px solid rgba(255,77,77,.3);border-radius:16px;padding:16px;color:#ff4d4d;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      Vider le cache
+    </button>
+    <p style="text-align:center;font-size:12px;color:var(--sub);margin-top:12px;">Le cache permet la lecture hors-ligne</p>
+  </div>
+</div>
+
+<!-- CACHE / TITRES TÉLÉCHARGÉS -->
+<div id="s-cached-tracks" class="screen hidden">
+  <div style="padding:calc(var(--safe-t)+18px) 20px 4px;display:flex;align-items:center;justify-content:space-between;">
+    <span class="home-title">Cache</span>
+    <button onclick="playRandomCached()" style="background:var(--acc);border:none;border-radius:12px;padding:8px 16px;color:#fff;font-size:13px;font-weight:600;">Aléatoire</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:10px 14px var(--scroll-pb);-webkit-overflow-scrolling:touch;">
+    <div id="cached-list"></div>
+  </div>
+</div>
+
 <!-- MINI PLAYER -->
 <div id="mini-player" onclick="openPlayer()">
   <div class="mp-art" id="mp-art"></div>
@@ -465,11 +517,11 @@
     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
     <span class="nav-label">Importer</span>
   </button>
-  <button class="nav-item" id="nav-storage" onclick="gotoNav(\'storage\')">
+  <button class="nav-item" id="nav-storage" onclick="gotoNav('storage')">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 9.5c0 .83-.67 1.5-1.5 1.5S11 13.33 11 12.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5zM19 19H5V5h14v14z"/></svg>
     <span class="nav-label">Stockage</span>
   </button>
-  <button class="nav-item" id="nav-cached" onclick="gotoNav(\'cached-tracks\')">
+  <button class="nav-item" id="nav-cached" onclick="gotoNav('cached-tracks')">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
     <span class="nav-label">Cache</span>
   </button>
@@ -594,13 +646,13 @@ function getCacheSize(){
 }
 
 function updateStorageDisplay(){
-  if(document.getElementById('storage-used')){
-    var cacheSize = getCacheSize();
-    document.getElementById('storage-cache').textContent = cacheSize;
-    var percent = (cacheSize / 500) * 100;
-    document.getElementById('storage-bar').style.width = percent + '%';
-    document.getElementById('storage-used').textContent = cacheSize;
-  }
+  var cacheSize = getCacheSize();
+  var percent = (cacheSize / 500) * 100;
+  // Update all storage elements (may or may not be in DOM)
+  ['storage-cache','storage-used'].forEach(id=>{var el=document.getElementById(id);if(el)el.textContent=cacheSize;});
+  var bar=document.getElementById('storage-bar');if(bar)bar.style.width=percent+'%';
+  var tc=document.getElementById('storage-tracks-count');if(tc)tc.textContent=tracks.length;
+  var cc=document.getElementById('storage-cache-count');if(cc)cc.textContent=cachedTrackIds.size;
 }
 
 function renderCachedTracks(){
@@ -649,6 +701,7 @@ function switchHomeTab(tab){activeHomeTab=tab;['overview','tracks','albums'].for
 
 /* SCREENS */
 const SCREENS={home:'s-home',playlists:'s-playlists',artists:'s-artists',import:'s-import',pldetail:'s-pldetail',albumdetail:'s-albumdetail',artistdetail:'s-artistdetail',player:'s-player',storage:'s-storage','cached-tracks':'s-cached-tracks'};
+
 var activeScreen='home';
 function showScreen(name,fromLeft){fromLeft=fromLeft||false;var prev=document.getElementById(SCREENS[activeScreen]);var next=document.getElementById(SCREENS[name]);if(!next||prev===next) return;prev.classList.remove('slide-left');if(!fromLeft) prev.classList.add('slide-left');else prev.classList.add('hidden');next.classList.remove('hidden','slide-left');activeScreen=name;}
 
@@ -936,44 +989,40 @@ function playAt(idx){
   var t=tracks[idx];
   if(!t||!dlToken) return;
   cur=idx;
-  
-  // Cherche d'abord en cache
-  getCachedTrack(t.id).then(cached => {
-    if(cached){
-      // ✅ TROUVÉ EN CACHE: Lecture instantanée
-      var blob = new Blob([cached.data]);
-      aud.src = URL.createObjectURL(blob);
-      console.log("📁 Lecture depuis le cache ⚡");
-    } else {
-      // ❌ PAS EN CACHE: Télécharge UNE SEULE FOIS
-      fetch(rawUrl(t.key))
-        .then(response => response.arrayBuffer())
-        .then(arrayBuffer => {
-          // ✅ Sauvegarde en cache (même fichier)
-          cacheTrack(t.id, arrayBuffer);
-          
-          // ✅ Joue le fichier qu'on vient de télécharger
-          var blob = new Blob([arrayBuffer]);
-          aud.src = URL.createObjectURL(blob);
-          
-          console.log("💾 Téléchargé et mis en cache!");
-          aud.load();
-          aud.play().catch(e=>console.error(e));
-          
-          renderHome();renderPlDetail();renderAlbumDetail();
-          renderArtistDetail();updateMiniPlayer();updatePlayerScreen();
-        })
-        .catch(e => {
-          console.error("Erreur téléchargement:", e);
-          notify("Erreur de lecture");
-        });
-      return; // Sort pour ne pas doubler l'appel play
-    }
-    
+
+  // Detect Safari / iOS
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    || /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  function startPlay(src){
+    aud.src = src;
     aud.load();
-    aud.play().catch(e=>console.error(e));
+    aud.play().catch(e=>console.error('play error:',e));
     renderHome();renderPlDetail();renderAlbumDetail();
     renderArtistDetail();updateMiniPlayer();updatePlayerScreen();
+    setupMediaSession();
+  }
+
+  getCachedTrack(t.id).then(cached => {
+    if(cached && !isSafari){
+      // Cache hit — use Blob URL (works on Chrome/Firefox)
+      var blob = new Blob([cached.data]);
+      startPlay(URL.createObjectURL(blob));
+      console.log('📁 Cache ⚡');
+    } else {
+      // Safari or not cached: use direct URL (Safari requires this)
+      var directUrl = rawUrl(t.key);
+      startPlay(directUrl);
+      console.log(isSafari ? '🍎 Safari — URL directe' : '🌐 Streaming');
+
+      // Cache in background (non-Safari only, Safari fetch+arrayBuffer unreliable for blobs)
+      if(!isSafari && !cached){
+        fetch(directUrl)
+          .then(r => r.arrayBuffer())
+          .then(ab => { cacheTrack(t.id, ab); console.log('💾 Mis en cache!'); })
+          .catch(e => console.warn('Cache bg failed:', e));
+      }
+    }
   });
 }
 function togglePlay(){if(cur===null) return;if(isPlaying){aud.pause();isPlaying=false;}else{aud.play().catch(()=>{});isPlaying=true;}updatePlayBtns();renderHome();renderPlDetail();}
@@ -990,10 +1039,69 @@ function updatePlayBtns(){var p=isPlaying?'M6 19h4V5H6v14zm8-14v14h4V5h-4z':'M8 
 function updateMiniPlayer(){var mp=document.getElementById('mini-player');if(cur===null){mp.classList.remove('show');return;}var t=tracks[cur],h=t.hue||hue(t.name);mp.classList.add('show');document.getElementById('mp-art').style.background=abg(h);document.getElementById('mp-art').innerHTML=noteIco(18,'rgba(255,255,255,.8)');document.getElementById('mp-name').textContent=t.name;document.getElementById('mp-artist').textContent=t.artist;updatePlayBtns();}
 function updatePlayerScreen(){if(cur===null) return;var t=tracks[cur],h=t.hue||hue(t.name);var pa=document.getElementById('player-art');pa.style.background=`linear-gradient(135deg,${abg(h)},${abg2(h)})`;pa.innerHTML=noteIco(80,'rgba(255,255,255,.4)');pa.classList.remove('pulse');requestAnimationFrame(()=>pa.classList.add('pulse'));document.getElementById('player-title').textContent=t.name;document.getElementById('player-artist').textContent=t.artist;document.querySelector('#like-btn svg').style.fill=liked.has(t.id)?'#ff4d4d':'var(--sub)';updatePlayBtns();}
 
-document.getElementById('seek-track').addEventListener('click',e=>{if(!aud.duration) return;var r=e.currentTarget.getBoundingClientRect();aud.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*aud.duration;});
-aud.addEventListener('timeupdate',()=>{var p=aud.duration?(aud.currentTime/aud.duration)*100:0;document.getElementById('seek-fill').style.width=p+'%';document.getElementById('mp-prog-fill').style.width=p+'%';document.getElementById('p-pt').textContent=fmt(aud.currentTime);document.getElementById('p-dt').textContent=fmt(aud.duration);});
-aud.addEventListener('play',()=>{isPlaying=true;updatePlayBtns();renderHome();renderPlDetail();});
-aud.addEventListener('pause',()=>{isPlaying=false;updatePlayBtns();renderHome();renderPlDetail();});
+/* ═══════════════════════════════════════════════════════════
+   MEDIA SESSION — Contrôles écran verrouillage / notification
+   ═══════════════════════════════════════════════════════════ */
+function setupMediaSession(){
+  if(!('mediaSession' in navigator)) return;
+  var t = cur !== null ? tracks[cur] : null;
+  if(!t) return;
+
+  // Métadonnées affichées sur l'écran de verrouillage
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: t.name,
+    artist: t.artist || 'Artiste inconnu',
+    album: 'Melo',
+    artwork: [
+      // Utilise une image de couverture si disponible, sinon une couleur SVG
+      { src: t.imgUrl || generateArtworkDataUrl(t), sizes: '512x512', type: 'image/png' }
+    ]
+  });
+
+  // Boutons de contrôle (écran verrouillage + centre de contrôle + notification)
+  navigator.mediaSession.setActionHandler('play', () => {
+    aud.play().catch(()=>{});
+    isPlaying = true;
+    updatePlayBtns();
+    renderHome();
+    navigator.mediaSession.playbackState = 'playing';
+  });
+  navigator.mediaSession.setActionHandler('pause', () => {
+    aud.pause();
+    isPlaying = false;
+    updatePlayBtns();
+    renderHome();
+    navigator.mediaSession.playbackState = 'paused';
+  });
+  navigator.mediaSession.setActionHandler('nexttrack', () => { goNext(); });
+  navigator.mediaSession.setActionHandler('previoustrack', () => { goPrev(); });
+  navigator.mediaSession.setActionHandler('seekto', (details) => {
+    if(details.seekTime !== undefined && aud.duration){
+      aud.currentTime = details.seekTime;
+    }
+  });
+
+  navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+}
+
+function generateArtworkDataUrl(t){
+  // Si l'image est une URL http ou data URL, on l'utilise directement
+  if(t && t.imgUrl && (t.imgUrl.startsWith('http') || t.imgUrl.startsWith('data:'))) return t.imgUrl;
+  // Sinon génère un SVG coloré comme artwork
+  var h = t ? (t.hue || hue(t.name)) : 200;
+  var c1 = 'hsl('+h+',55%,62%)';
+  var c2 = 'hsl('+((h+30)%360)+',45%,50%)';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="'+c1+'"/><stop offset="100%" stop-color="'+c2+'"/></linearGradient></defs><rect width="512" height="512" fill="url(#g)"/><path d="M256 140v188c-14-10-31-16-50-16-44 0-80 36-80 80s36 80 80 80 80-36 80-80V220h80V140h-110z" fill="rgba(255,255,255,0.35)"/></svg>';
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+}
+
+// Mettre à jour l'état MediaSession lors des événements audio
+if(!aud.duration) return;var r=e.currentTarget.getBoundingClientRect();aud.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*aud.duration;});
+aud.addEventListener('timeupdate',()=>{var p=aud.duration?(aud.currentTime/aud.duration)*100:0;document.getElementById('seek-fill').style.width=p+'%';document.getElementById('mp-prog-fill').style.width=p+'%';document.getElementById('p-pt').textContent=fmt(aud.currentTime);document.getElementById('p-dt').textContent=fmt(aud.duration);
+  if('mediaSession' in navigator && aud.duration && !isNaN(aud.duration)){try{navigator.mediaSession.setPositionState({duration:aud.duration,playbackRate:aud.playbackRate||1,position:aud.currentTime});}catch(_){}}
+});
+aud.addEventListener('play',()=>{isPlaying=true;updatePlayBtns();renderHome();renderPlDetail();if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing';});
+aud.addEventListener('pause',()=>{isPlaying=false;updatePlayBtns();renderHome();renderPlDetail();if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';});
 aud.addEventListener('ended',goNext);
 
 var modalEl=null;
