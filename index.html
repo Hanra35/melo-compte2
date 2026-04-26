@@ -1125,9 +1125,49 @@ catch(err){item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(nam
 
 async function deleteTrack(id){var t=tracks.find(x=>x.id===id);if(!t) return;var ti=tracks.indexOf(t);try{await fetch(API+'?action=delete&key='+encodeURIComponent(t.key)+'&fileId='+encodeURIComponent(t.fileId||''));}catch(_){}await deleteCachedTrack(id);tracks=tracks.filter(x=>x.id!==id);playlists.forEach(pl=>{pl.trackIds=pl.trackIds.filter(x=>x!==id);});albums.forEach(alb=>{alb.trackIds=alb.trackIds.filter(x=>x!==id);});artists.forEach(ar=>{ar.trackIds=ar.trackIds.filter(x=>x!==id);});await saveMeta();if(cur===ti){cur=null;isPlaying=false;aud.pause();aud.src='';updateMiniPlayer();}else if(cur!==null&&ti<cur) cur--;renderHome();notify('Supprimé ✓');}
 
-async function init(){try{var r=await fetch(API+'?action=init');if(!r.ok) throw new Error('Serveur indisponible ('+r.status+')');var d=await r.json();if(d.error) throw new Error(d.error);tracks=Array.isArray(d.tracks)?d.tracks:[];playlists=Array.isArray(d.playlists)?d.playlists:[];albums=Array.isArray(d.albums)?d.albums:[];artists=Array.isArray(d.artists)?d.artists:[];dlUrl=d.downloadUrl;dlToken=d.downloadToken;await initCache();updateStorageDisplay();document.getElementById('loading').style.display='none';renderHome();}catch(e){document.getElementById('ldmsg').textContent='❌ '+e.message;document.getElementById('ldmsg').style.color='#ff4d4d';document.querySelector('.spin').style.display='none';}}
+async function init(){
+  // Essaie l'API avec timeout de 6 secondes
+  var apiOk = false;
+  try{
+    var controller = new AbortController();
+    var timeout = setTimeout(()=>controller.abort(), 6000);
+    var r = await fetch(API+'?action=init', {signal: controller.signal});
+    clearTimeout(timeout);
+    if(!r.ok) throw new Error('Serveur indisponible ('+r.status+')');
+    var d = await r.json();
+    if(d.error) throw new Error(d.error);
+    tracks    = Array.isArray(d.tracks)    ? d.tracks    : [];
+    playlists = Array.isArray(d.playlists) ? d.playlists : [];
+    albums    = Array.isArray(d.albums)    ? d.albums    : [];
+    artists   = Array.isArray(d.artists)   ? d.artists   : [];
+    dlUrl     = d.downloadUrl;
+    dlToken   = d.downloadToken;
+    // Sauvegarde locale en cas de perte réseau
+    try{localStorage.setItem('melo-meta', JSON.stringify({tracks,playlists,albums,artists}));}catch(_){}
+    apiOk = true;
+  } catch(e){
+    // API inaccessible — charge depuis localStorage
+    console.warn('API indisponible:', e.message);
+    try{
+      var local = localStorage.getItem('melo-meta');
+      if(local){
+        var saved = JSON.parse(local);
+        tracks    = Array.isArray(saved.tracks)    ? saved.tracks    : [];
+        playlists = Array.isArray(saved.playlists) ? saved.playlists : [];
+        albums    = Array.isArray(saved.albums)    ? saved.albums    : [];
+        artists   = Array.isArray(saved.artists)   ? saved.artists   : [];
+      }
+    }catch(_){}
+    if(!apiOk){
+      notify('⚠️ Mode hors-ligne — données locales', 4000);
+    }
+  }
+  await initCache();
+  updateStorageDisplay();
+  document.getElementById('loading').style.display='none';
+  renderHome();
+}
 init();
 </script>
 </body>
 </html>
-
