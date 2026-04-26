@@ -2,7 +2,7 @@ const { createHash } = require('crypto');
 
 const KEY_ID  = '005ac1e426dba9b0000000001';
 const APP_KEY = 'K005BBpJA11ponJY7pvKaPK94H4//qQ';
-const BUCKET  = 'melo-account-2';
+const BUCKET  = 'melo-music-20226';
 const META    = 'melo-metadata.json';
 
 function setCors(res) {
