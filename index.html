@@ -441,40 +441,55 @@
 <div id="s-storage" class="screen hidden">
   <div style="padding:calc(var(--safe-t)+18px) 20px 4px;display:flex;align-items:center;justify-content:space-between;">
     <span class="home-title">Stockage</span>
+    <button onclick="refreshBucketInfo()" id="storage-refresh-btn" style="background:var(--card);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--sub)"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
   </div>
   <div style="flex:1;overflow-y:auto;padding:14px 16px var(--scroll-pb);-webkit-overflow-scrolling:touch;">
+
+    <!-- Espace bucket B2 -->
     <div style="background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--sh2);">
-      <p style="font-size:13px;color:var(--sub);margin-bottom:8px;">Cache utilisé</p>
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px;">
-        <span id="storage-cache" style="font-size:32px;font-weight:800;color:var(--text);">0</span>
-        <span style="font-size:14px;color:var(--sub);">MB / 500 MB</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <p style="font-size:13px;font-weight:600;color:var(--text);">Bucket Backblaze B2</p>
+        <span id="bucket-status" style="font-size:11px;color:var(--sub);">Chargement...</span>
       </div>
-      <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;">
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;">
+        <span id="bucket-used" style="font-size:30px;font-weight:800;color:var(--text);">—</span>
+        <span id="bucket-limit" style="font-size:14px;color:var(--sub);">/ — GB</span>
+      </div>
+      <div style="height:8px;background:var(--card2);border-radius:4px;overflow:hidden;margin-bottom:8px;">
+        <div id="bucket-bar" style="height:100%;background:var(--acc);border-radius:4px;width:0%;transition:width .6s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--sub);" id="bucket-files">— fichiers</span>
+        <span style="font-size:12px;color:var(--sub);" id="bucket-free">— libre</span>
+      </div>
+    </div>
+
+    <!-- Cache local IndexedDB -->
+    <div style="background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--sh2);">
+      <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">Cache local (appareil)</p>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;">
+        <span id="storage-cache" style="font-size:30px;font-weight:800;color:var(--acc);">0</span>
+        <span style="font-size:14px;color:var(--sub);">MB utilisés</span>
+      </div>
+      <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;margin-bottom:10px;">
         <div id="storage-bar" style="height:100%;background:var(--acc);border-radius:3px;width:0%;transition:width .4s;"></div>
       </div>
-    </div>
-    <div style="background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--sh2);">
-      <p style="font-size:13px;color:var(--sub);margin-bottom:6px;">Bibliothèque</p>
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <p id="storage-tracks-count" style="font-size:22px;font-weight:800;color:var(--text);">0</p>
-          <p style="font-size:12px;color:var(--sub);">titres</p>
-        </div>
-        <div>
-          <p id="storage-cache-count" style="font-size:22px;font-weight:800;color:var(--acc);">0</p>
-          <p style="font-size:12px;color:var(--sub);">en cache</p>
-        </div>
-        <div>
-          <p id="storage-used" style="font-size:22px;font-weight:800;color:var(--orange);">0</p>
-          <p style="font-size:12px;color:var(--sub);">MB utilisés</p>
+        <div style="display:flex;gap:18px;">
+          <div><p id="storage-tracks-count" style="font-size:18px;font-weight:700;color:var(--text);">0</p><p style="font-size:11px;color:var(--sub);">titres total</p></div>
+          <div><p id="storage-cache-count" style="font-size:18px;font-weight:700;color:var(--acc);">0</p><p style="font-size:11px;color:var(--sub);">en cache</p></div>
+          <div><p id="storage-used" style="font-size:18px;font-weight:700;color:var(--orange);">0</p><p style="font-size:11px;color:var(--sub);">MB</p></div>
         </div>
       </div>
     </div>
+
     <button onclick="clearAllCache()" style="width:100%;background:var(--card);border:1px solid rgba(255,77,77,.3);border-radius:16px;padding:16px;color:#ff4d4d;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-      Vider le cache
+      Vider le cache local
     </button>
-    <p style="text-align:center;font-size:12px;color:var(--sub);margin-top:12px;">Le cache permet la lecture hors-ligne</p>
+    <p style="text-align:center;font-size:12px;color:var(--sub);margin-top:10px;">Le cache local permet la lecture hors-ligne</p>
   </div>
 </div>
 
@@ -647,12 +662,41 @@ function getCacheSize(){
 
 function updateStorageDisplay(){
   var cacheSize = getCacheSize();
-  var percent = (cacheSize / 500) * 100;
-  // Update all storage elements (may or may not be in DOM)
+  var percent = Math.min(100, (cacheSize / 500) * 100);
   ['storage-cache','storage-used'].forEach(id=>{var el=document.getElementById(id);if(el)el.textContent=cacheSize;});
   var bar=document.getElementById('storage-bar');if(bar)bar.style.width=percent+'%';
   var tc=document.getElementById('storage-tracks-count');if(tc)tc.textContent=tracks.length;
   var cc=document.getElementById('storage-cache-count');if(cc)cc.textContent=cachedTrackIds.size;
+}
+
+var bucketInfoLoaded = false;
+async function refreshBucketInfo(){
+  var btn = document.getElementById('storage-refresh-btn');
+  var status = document.getElementById('bucket-status');
+  if(btn) btn.style.animation='spin .7s linear infinite';
+  if(status) status.textContent='Chargement...';
+  try{
+    var r = await fetch(API+'?action=bucket-info');
+    if(!r.ok) throw new Error('Erreur '+r.status);
+    var d = await r.json();
+    var usedGB = (d.usedMB/1024).toFixed(2);
+    var limitGB = (d.limitMB/1024).toFixed(0);
+    var freeGB = ((d.limitMB - d.usedMB)/1024).toFixed(2);
+    var pct = Math.min(100, d.usedMB/d.limitMB*100);
+    var barColor = pct>85?'#ff4d4d':pct>60?'var(--orange)':'var(--acc)';
+
+    var el=document.getElementById('bucket-used'); if(el) el.textContent=usedGB+' GB';
+    var el2=document.getElementById('bucket-limit'); if(el2) el2.textContent='/ '+limitGB+' GB';
+    var bar=document.getElementById('bucket-bar'); if(bar){bar.style.width=pct+'%';bar.style.background=barColor;}
+    var el3=document.getElementById('bucket-files'); if(el3) el3.textContent=d.fileCount+' fichiers';
+    var el4=document.getElementById('bucket-free'); if(el4) el4.textContent=freeGB+' GB libre';
+    if(status) status.textContent='✓ À jour';
+    bucketInfoLoaded = true;
+  }catch(e){
+    if(status) status.textContent='❌ Erreur';
+    console.error('bucket-info:', e);
+  }
+  if(btn) btn.style.animation='';
 }
 
 function renderCachedTracks(){
@@ -660,13 +704,27 @@ function renderCachedTracks(){
   if(!el) return;
   var cachedList = tracks.filter(t => cachedTrackIds.has(t.id));
   if(!cachedList.length){
-    el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><p class="empty-title">Aucun cache</p><p class="empty-sub">Les musiques s\'ajoutent au cache au démarrage de la lecture</p></div>';
+    el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><div class="empty-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div><p class="empty-title">Aucun cache</p><p class="empty-sub">Les musiques s\'ajoutent au cache lors de la lecture</p></div>';
     return;
   }
-  el.innerHTML = cachedList.map((t,i) => {
+  el.innerHTML = cachedList.map(t => {
     var idx = tracks.indexOf(t);
-    return `<div class="song-row" onclick="rowClick(event,${idx})"><div class="song-art" style="background:\${abg(t.hue||hue(t.name))}">\${noteIco(20,'rgba(255,255,255,.8)')}</div><div class="song-info"><p class="song-name">\${esc(t.name)}</p><p class="song-artist">\${esc(t.artist)}</p></div><div class="song-menu"><button onclick="deleteCachedTrack('\${t.id}');renderCachedTracks();notify('Retiré du cache')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></div>`;
+    var h = t.hue || hue(t.name);
+    var artStyle = t.imgUrl ? 'background:'+abg(h)+';background-image:url('+t.imgUrl+');background-size:cover;background-position:center' : 'background:'+abg(h);
+    return '<div class="song-row" onclick="rowClick(event,'+idx+')">'
+      +'<div class="song-art" style="'+artStyle+'">'+(t.imgUrl?'':noteIco(20,'rgba(255,255,255,.8)'))+'</div>'
+      +'<div class="song-info"><p class="song-name">'+esc(t.name)+'</p><p class="song-artist">'+esc(t.artist)+'</p></div>'
+      +'<div class="song-menu"><button onclick="event.stopPropagation();removeCacheItem(\''+t.id+'\')">'
+      +'<svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>'
+      +'</button></div></div>';
   }).join('');
+}
+
+async function removeCacheItem(trackId){
+  await deleteCachedTrack(trackId);
+  renderCachedTracks();
+  updateStorageDisplay();
+  notify('Retiré du cache ✓');
 }
 
 function playRandomCached(){
@@ -723,7 +781,7 @@ function closePlayer(){
 function gotoNav(name){
   /* FIX: Si on quitte le player via la nav, restaurer le mini-player */
   if(cur!==null) document.getElementById('mini-player').classList.remove('hidden-in-player');
-  Object.keys(SCREENS).forEach(n=>{var el=document.getElementById(SCREENS[n]);if(!el) return;if(n===name){el.classList.remove('hidden','slide-left');}else{el.classList.remove('slide-left');el.classList.add('hidden');}});activeScreen=name;['home','playlists','artists','import','storage','cached-tracks'].forEach(n=>{var item=document.getElementById('nav-'+n);if(!item) return;item.classList.toggle('active',n===name);});if(name==='home') renderHome();if(name==='playlists') renderPlScreen();if(name==='artists') renderArtists();if(name==='storage') updateStorageDisplay();if(name==='cached-tracks') renderCachedTracks();
+  Object.keys(SCREENS).forEach(n=>{var el=document.getElementById(SCREENS[n]);if(!el) return;if(n===name){el.classList.remove('hidden','slide-left');}else{el.classList.remove('slide-left');el.classList.add('hidden');}});activeScreen=name;['home','playlists','artists','import','storage','cached-tracks'].forEach(n=>{var item=document.getElementById('nav-'+n);if(!item) return;item.classList.toggle('active',n===name);});if(name==='home') renderHome();if(name==='playlists') renderPlScreen();if(name==='artists') renderArtists();if(name==='storage'){updateStorageDisplay();if(!bucketInfoLoaded) refreshBucketInfo();}if(name==='cached-tracks') renderCachedTracks();
 }
 
 /* CACHE DISABLED - STREAMING ONLY */
@@ -776,13 +834,73 @@ function renderHome(){
 
 function renderTracks(){var q=(document.getElementById('track-search')?.value||'').toLowerCase().trim();var list=q?tracks.filter(t=>(t.name+t.artist).toLowerCase().includes(q)):tracks;var el=document.getElementById('song-list-tracks'),lc=document.getElementById('tracks-count');if(!tracks.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">${noteIco(34,'var(--sub)')}</div><p class="empty-title">Aucun titre</p></div>`;return;}lc.textContent=list.length+(q?' résultat'+(list.length>1?'s':''):' titre'+(list.length>1?'s':''));el.innerHTML=list.map(t=>{var i=tracks.indexOf(t);return songRowHtml(t,i,`rowClick(event,${i})`,`openTrackMenu(event,'${t.id}')`,null);}).join('');}
 
-function renderAlbumsGrid(){var el=document.getElementById('albums-grid');el.innerHTML=albums.map(alb=>{var colors=alb.trackIds.slice(0,4).map(id=>{var t=tracks.find(x=>x.id===id);return t?abg(t.hue||hue(t.name)):'#2a3548';});var artHtml=colors.length>=2?`<div class="album-art-grid">${colors.slice(0,4).map(c=>`<div style="background:${c}"></div>`).join('')}</div>`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${colors[0]||'#2a3548'}">${noteIco(36,'rgba(255,255,255,.4)')}</div>`;return `<div class="album-card" onclick="openAlbumDetail('${alb.id}')"><div class="album-art">${artHtml}<button class="album-menu-btn" onclick="event.stopPropagation();openAlbumMenu('${alb.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button></div><div class="album-info"><p class="album-name">${esc(alb.name)}</p><p class="album-sub">${alb.trackIds.length} titre${alb.trackIds.length>1?'s':''}</p></div></div>`;}).join('')+`<div class="album-new" onclick="newAlbum()"><svg width="28" height="28" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg><p>Nouvel album</p></div>`;}
+function renderAlbumsGrid(){var el=document.getElementById('albums-grid');el.innerHTML=albums.map(alb=>{var colors=alb.trackIds.slice(0,4).map(id=>{var t=tracks.find(x=>x.id===id);return t?abg(t.hue||hue(t.name)):'#2a3548';});var artHtml=alb.imgUrl?'<img src="'+alb.imgUrl+'" style="width:100%;height:100%;object-fit:cover;">':colors.length>=2?'<div class="album-art-grid">'+colors.slice(0,4).map(c=>'<div style="background:'+c+'"></div>').join('')+'</div>':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:'+(colors[0]||'#2a3548')+'">'+noteIco(36,'rgba(255,255,255,.4)')+'</div>';return '<div class="album-card" onclick="openAlbumDetail(\''+alb.id+'\')"><div class="album-art">'+artHtml+'<button class="album-menu-btn" onclick="event.stopPropagation();openAlbumMenu(\''+alb.id+'\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button></div><div class="album-info"><p class="album-name">'+esc(alb.name)+'</p><p class="album-sub">'+alb.trackIds.length+' titre'+(alb.trackIds.length>1?'s':'')+'</p></div></div>';}).join('')+'<div class="album-new" onclick="newAlbum()"><svg width="28" height="28" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg><p>Nouvel album</p></div>';}
 
-function openAlbumMenu(id){var alb=albums.find(a=>a.id===id);if(!alb) return;showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(alb.name)}</div><div class="sheet-item" onclick="closeModal();openAlbumDetail('${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z"/></svg>Ouvrir</div><div class="sheet-item" onclick="closeModal();renameAlbum('${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Renommer</div><div class="sheet-item" onclick="closeModal();openTrackPicker('album','${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Ajouter des titres</div><div class="sheet-item red" onclick="closeModal();deleteAlbum('${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer</div></div>`);}
+function openAlbumMenu(id){var alb=albums.find(a=>a.id===id);if(!alb) return;showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(alb.name)}</div><div class="sheet-item" onclick="closeModal();openAlbumDetail('${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z"/></svg>Ouvrir</div><div class="sheet-item" onclick="closeModal();renameAlbum('${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Renommer</div><div class="sheet-item" onclick="closeModal();setAlbumPhoto('${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>Changer la photo</div><div class="sheet-item" onclick="closeModal();openTrackPicker('album','${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Ajouter des titres</div><div class="sheet-item red" onclick="closeModal();deleteAlbum('${id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer</div></div>`);}
+
+function setAlbumPhoto(albumId){
+  // Ouvre un input file caché
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.onchange = function(){
+    var file = inp.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = async function(e){
+      var alb = albums.find(a=>a.id===albumId);
+      if(!alb) return;
+      alb.imgUrl = e.target.result;
+      // Appliquer automatiquement à toutes les chansons de l'album
+      var count = 0;
+      alb.trackIds.forEach(tid=>{
+        var t = tracks.find(x=>x.id===tid);
+        if(t){ t.imgUrl = e.target.result; count++; }
+      });
+      await saveMeta();
+      renderAlbumDetail();
+      renderAlbumsGrid();
+      notify('Photo appliquée à '+count+' titre'+(count>1?'s':'')+' ✓');
+    };
+    reader.readAsDataURL(file);
+  };
+  inp.click();
+}
 
 function openAlbumDetail(id){currentAlbum=albums.find(a=>a.id===id);if(!currentAlbum) return;document.getElementById('albd-title').textContent=currentAlbum.name;document.getElementById('albd-back').onclick=()=>{showScreen('home',true);switchHomeTab('albums');};renderAlbumDetail();showScreen('albumdetail');}
-function renderAlbumDetail(){var el=document.getElementById('albd-scroll');if(!currentAlbum){el.innerHTML='';return;}var albTracks=currentAlbum.trackIds.map(id=>tracks.find(t=>t.id===id)).filter(Boolean);var colors=currentAlbum.trackIds.slice(0,4).map(id=>{var t=tracks.find(x=>x.id===id);return t?abg(t.hue||hue(t.name)):'#2a3548';});var artHtml=colors.length>=2?colors.slice(0,4).map(c=>`<div style="background:${c}"></div>`).join(''):'';el.innerHTML=`<div class="albd-hero"><div class="albd-art${colors.length<2?' solo':''}">${colors.length>=2?artHtml:noteIco(32,'var(--sub)')}</div><div class="albd-info"><p class="albd-name">${esc(currentAlbum.name)}</p><p class="albd-sub">${albTracks.length} titre${albTracks.length>1?'s':''}</p><button class="albd-play-btn" onclick="playAlbum('${currentAlbum.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>Lancer</button></div></div>`+(albTracks.length?`<div class="song-list">`+albTracks.map(t=>{var ri=tracks.indexOf(t);return songRowHtml(t,ri,`playFromAlbum('${currentAlbum.id}','${t.id}')`,null,`removeFromAlbum(event,'${currentAlbum.id}','${t.id}')`);}).join('')+'</div>':`<p style="text-align:center;color:var(--sub);font-size:14px;padding:30px">Album vide — appuyez sur ⋮ pour ajouter des titres</p>`);}
-function editCurrentAlbum(){if(!currentAlbum) return;showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(currentAlbum.name)}</div><div class="sheet-item" onclick="closeModal();renameAlbum('${currentAlbum.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Renommer l'album</div><div class="sheet-item" onclick="closeModal();openTrackPicker('album','${currentAlbum.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Ajouter des titres</div><div class="sheet-item red" onclick="closeModal();deleteAlbum('${currentAlbum.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer l'album</div></div>`);}
+
+function renderAlbumDetail(){
+  var el=document.getElementById('albd-scroll');
+  if(!currentAlbum){el.innerHTML='';return;}
+  var albTracks=currentAlbum.trackIds.map(id=>tracks.find(t=>t.id===id)).filter(Boolean);
+  var colors=currentAlbum.trackIds.slice(0,4).map(id=>{var t=tracks.find(x=>x.id===id);return t?abg(t.hue||hue(t.name)):'#2a3548';});
+
+  // Art de l'album : photo si dispo, sinon grille de couleurs
+  var artHtml;
+  if(currentAlbum.imgUrl){
+    artHtml = '<img src="'+currentAlbum.imgUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">';
+  } else if(colors.length>=2){
+    artHtml = colors.slice(0,4).map(c=>'<div style="background:'+c+'"></div>').join('');
+  } else {
+    artHtml = noteIco(32,'var(--sub)');
+  }
+
+  el.innerHTML = '<div class="albd-hero">'
+    +'<div class="albd-art'+((!currentAlbum.imgUrl&&colors.length<2)?' solo':'')+'" style="'+(currentAlbum.imgUrl?'display:block;overflow:hidden;':'')+'">'
+    +artHtml+'</div>'
+    +'<div class="albd-info">'
+    +'<p class="albd-name">'+esc(currentAlbum.name)+'</p>'
+    +'<p class="albd-sub">'+albTracks.length+' titre'+(albTracks.length>1?'s':'')+'</p>'
+    +'<div style="display:flex;gap:8px;margin-top:10px;">'
+    +'<button class="albd-play-btn" onclick="playAlbum(\''+currentAlbum.id+'\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>Lancer</button>'
+    +'<button onclick="setAlbumPhoto(\''+currentAlbum.id+'\')" style="background:var(--card2);border:none;border-radius:12px;padding:9px 14px;color:var(--sub);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>Photo</button>'
+    +'</div></div></div>'
+    +(albTracks.length
+      ? '<div class="song-list">'+albTracks.map(t=>{var ri=tracks.indexOf(t);return songRowHtml(t,ri,'playFromAlbum(\''+currentAlbum.id+'\',\''+t.id+'\')',null,'removeFromAlbum(event,\''+currentAlbum.id+'\',\''+t.id+'\')');}).join('')+'</div>'
+      : '<p style="text-align:center;color:var(--sub);font-size:14px;padding:30px">Album vide — appuyez sur ⋮ pour ajouter des titres</p>'
+    );
+}
+function editCurrentAlbum(){if(!currentAlbum) return;showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(currentAlbum.name)}</div><div class="sheet-item" onclick="closeModal();setAlbumPhoto('${currentAlbum.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>Changer la photo</div><div class="sheet-item" onclick="closeModal();renameAlbum('${currentAlbum.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Renommer l'album</div><div class="sheet-item" onclick="closeModal();openTrackPicker('album','${currentAlbum.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Ajouter des titres</div><div class="sheet-item red" onclick="closeModal();deleteAlbum('${currentAlbum.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer l'album</div></div>`);}
 function newAlbum(){showDialog('Nouvel album','Nom de l\'album...',name=>{if(!name.trim()) return;albums.push({id:genId(),name:name.trim(),trackIds:[]});saveMeta();renderAlbumsGrid();notify('Album créé ✓');});}
 function renameAlbum(id){var alb=albums.find(a=>a.id===id);if(!alb) return;showDialog('Renommer',alb.name,name=>{if(!name.trim()) return;alb.name=name.trim();if(currentAlbum&&currentAlbum.id===id) document.getElementById('albd-title').textContent=alb.name;saveMeta();renderAlbumsGrid();notify('Renommé ✓');});}
 async function deleteAlbum(id){albums=albums.filter(a=>a.id!==id);if(currentAlbum&&currentAlbum.id===id){currentAlbum=null;showScreen('home',true);switchHomeTab('albums');}await saveMeta();renderAlbumsGrid();notify('Album supprimé');}
