@@ -465,6 +465,14 @@
     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
     <span class="nav-label">Importer</span>
   </button>
+  <button class="nav-item" id="nav-storage" onclick="gotoNav(\'storage\')">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 9.5c0 .83-.67 1.5-1.5 1.5S11 13.33 11 12.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5zM19 19H5V5h14v14z"/></svg>
+    <span class="nav-label">Stockage</span>
+  </button>
+  <button class="nav-item" id="nav-cached" onclick="gotoNav(\'cached-tracks\')">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    <span class="nav-label">Cache</span>
+  </button>
 </div>
 
 <div id="notif"></div>
@@ -481,6 +489,145 @@ var activeHomeTab='overview';
 var pickerSelected=[],pickerTarget=null,pickerType=null;
 /* FIX 4: queue drag state */
 var qDragItems=[];
+
+/* ═══════════════════════════════════════════════════════════
+   CACHE ÉCONOMIQUE - IndexedDB
+   ═══════════════════════════════════════════════════════════ */
+const DB_NAME = 'melo-cache-db';
+const DB_VERSION = 1;
+const STORE_NAME = 'cached-tracks';
+const STORAGE_LIMIT = 500 * 1024 * 1024; // 500MB
+
+var db = null;
+var cachedTrackIds = new Set();
+
+async function initCache(){
+  return new Promise((resolve, reject) => {
+    var req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      db = req.result;
+      loadCachedList();
+      resolve();
+    };
+    req.onupgradeneeded = (e) => {
+      var database = e.target.result;
+      if(!database.objectStoreNames.contains(STORE_NAME)) {
+        database.createObjectStore(STORE_NAME, {keyPath: 'trackId'});
+      }
+    };
+  });
+}
+
+async function cacheTrack(trackId, arrayBuffer){
+  if(!db) return;
+  return new Promise((resolve) => {
+    var tx = db.transaction([STORE_NAME], 'readwrite');
+    var store = tx.objectStore(STORE_NAME);
+    store.put({trackId, data: arrayBuffer, timestamp: Date.now()});
+    tx.oncomplete = () => {
+      cachedTrackIds.add(trackId);
+      updateStorageDisplay();
+      resolve();
+    };
+  });
+}
+
+async function getCachedTrack(trackId){
+  if(!db) return null;
+  return new Promise((resolve) => {
+    var tx = db.transaction([STORE_NAME], 'readonly');
+    var store = tx.objectStore(STORE_NAME);
+    var req = store.get(trackId);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+async function loadCachedList(){
+  if(!db) return;
+  cachedTrackIds.clear();
+  return new Promise((resolve) => {
+    var tx = db.transaction([STORE_NAME], 'readonly');
+    var store = tx.objectStore(STORE_NAME);
+    var req = store.getAll();
+    req.onsuccess = () => {
+      req.result.forEach(item => cachedTrackIds.add(item.trackId));
+      resolve();
+    };
+  });
+}
+
+async function clearAllCache(){
+  if(!window.confirm('Vider tout le cache? ('+getCacheSize()+'MB)')) return;
+  if(!db) return;
+  return new Promise((resolve) => {
+    var tx = db.transaction([STORE_NAME], 'readwrite');
+    var store = tx.objectStore(STORE_NAME);
+    store.clear();
+    tx.oncomplete = () => {
+      cachedTrackIds.clear();
+      updateStorageDisplay();
+      renderCachedTracks();
+      notify('Cache vidé ✓');
+      resolve();
+    };
+  });
+}
+
+async function deleteCachedTrack(trackId){
+  if(!db) return;
+  return new Promise((resolve) => {
+    var tx = db.transaction([STORE_NAME], 'readwrite');
+    var store = tx.objectStore(STORE_NAME);
+    store.delete(trackId);
+    tx.oncomplete = () => {
+      cachedTrackIds.delete(trackId);
+      updateStorageDisplay();
+      resolve();
+    };
+  });
+}
+
+function getCacheSize(){
+  return Math.round(cachedTrackIds.size * 4.5); // Approximation: 4.5MB par chanson
+}
+
+function updateStorageDisplay(){
+  if(document.getElementById('storage-used')){
+    var cacheSize = getCacheSize();
+    document.getElementById('storage-cache').textContent = cacheSize;
+    var percent = (cacheSize / 500) * 100;
+    document.getElementById('storage-bar').style.width = percent + '%';
+    document.getElementById('storage-used').textContent = cacheSize;
+  }
+}
+
+function renderCachedTracks(){
+  var el = document.getElementById('cached-list');
+  if(!el) return;
+  var cachedList = tracks.filter(t => cachedTrackIds.has(t.id));
+  if(!cachedList.length){
+    el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><p class="empty-title">Aucun cache</p><p class="empty-sub">Les musiques s\'ajoutent au cache au démarrage de la lecture</p></div>';
+    return;
+  }
+  el.innerHTML = cachedList.map((t,i) => {
+    var idx = tracks.indexOf(t);
+    return `<div class="song-row" onclick="rowClick(event,${idx})"><div class="song-art" style="background:\${abg(t.hue||hue(t.name))}">\${noteIco(20,'rgba(255,255,255,.8)')}</div><div class="song-info"><p class="song-name">\${esc(t.name)}</p><p class="song-artist">\${esc(t.artist)}</p></div><div class="song-menu"><button onclick="deleteCachedTrack('\${t.id}');renderCachedTracks();notify('Retiré du cache')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></div>`;
+  }).join('');
+}
+
+function playRandomCached(){
+  if(cachedTrackIds.size === 0){
+    notify('Aucun cache disponible');
+    return;
+  }
+  var cachedTracks = tracks.filter(t => cachedTrackIds.has(t.id));
+  if(cachedTracks.length === 0) return;
+  var idx = tracks.indexOf(cachedTracks[Math.floor(Math.random()*cachedTracks.length)]);
+  if(idx > -1) playAt(idx);
+}
+
 const aud=document.getElementById('aud');
 aud.volume=volume;
 
@@ -501,7 +648,7 @@ function toggleTheme(){isDark=!isDark;document.body.classList.toggle('light',!is
 function switchHomeTab(tab){activeHomeTab=tab;['overview','tracks','albums'].forEach(t=>{document.getElementById('tab-'+(t==='overview'?'overview':t==='tracks'?'tracks':'albums')).classList.toggle('active',t===tab);document.getElementById('ts-'+t).classList.toggle('active',t===tab);});if(tab==='tracks') renderTracks();if(tab==='albums') renderAlbumsGrid();}
 
 /* SCREENS */
-const SCREENS={home:'s-home',playlists:'s-playlists',artists:'s-artists',import:'s-import',pldetail:'s-pldetail',albumdetail:'s-albumdetail',artistdetail:'s-artistdetail',player:'s-player'};
+const SCREENS={home:'s-home',playlists:'s-playlists',artists:'s-artists',import:'s-import',pldetail:'s-pldetail',albumdetail:'s-albumdetail',artistdetail:'s-artistdetail',player:'s-player',storage:'s-storage','cached-tracks':'s-cached-tracks'};
 var activeScreen='home';
 function showScreen(name,fromLeft){fromLeft=fromLeft||false;var prev=document.getElementById(SCREENS[activeScreen]);var next=document.getElementById(SCREENS[name]);if(!next||prev===next) return;prev.classList.remove('slide-left');if(!fromLeft) prev.classList.add('slide-left');else prev.classList.add('hidden');next.classList.remove('hidden','slide-left');activeScreen=name;}
 
@@ -523,7 +670,8 @@ function closePlayer(){
 function gotoNav(name){
   /* FIX: Si on quitte le player via la nav, restaurer le mini-player */
   if(cur!==null) document.getElementById('mini-player').classList.remove('hidden-in-player');
-  Object.keys(SCREENS).forEach(n=>{var el=document.getElementById(SCREENS[n]);if(!el) return;if(n===name){el.classList.remove('hidden','slide-left');}else{el.classList.remove('slide-left');el.classList.add('hidden');}});activeScreen=name;['home','playlists','artists','import'].forEach(n=>{var item=document.getElementById('nav-'+n);if(!item) return;item.classList.toggle('active',n===name);});if(name==='home') renderHome();if(name==='playlists') renderPlScreen();if(name==='artists') renderArtists();}
+  Object.keys(SCREENS).forEach(n=>{var el=document.getElementById(SCREENS[n]);if(!el) return;if(n===name){el.classList.remove('hidden','slide-left');}else{el.classList.remove('slide-left');el.classList.add('hidden');}});activeScreen=name;['home','playlists','artists','import','storage','cached-tracks'].forEach(n=>{var item=document.getElementById('nav-'+n);if(!item) return;item.classList.toggle('active',n===name);});if(name==='home') renderHome();if(name==='playlists') renderPlScreen();if(name==='artists') renderArtists();if(name==='storage') updateStorageDisplay();if(name==='cached-tracks') renderCachedTracks();
+}
 
 /* CACHE DISABLED - STREAMING ONLY */
 var rawUrl=key=>dlUrl+'/file/'+BUCKET+'/'+encodeURIComponent(key)+'?Authorization='+encodeURIComponent(dlToken);
@@ -621,8 +769,49 @@ async function removeFromPl(e,plId,tid){e.stopPropagation();var pl=playlists.fin
 
 /* TRACK MENU */
 function rowClick(e,idx){if(!e.target.closest('.song-menu')) playAt(idx);}
-function openTrackMenu(e,trackId){e.stopPropagation();var t=tracks.find(x=>x.id===trackId);if(!t) return;var plItems=playlists.map(pl=>`<div class="sheet-item" onclick="addToPlaylist('${trackId}','${pl.id}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>${esc(pl.name)}</div>`).join('');showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(t.name)}</div>${plItems}<div class="sheet-item" onclick="closeModal();newPlaylistWithTrack('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nouvelle playlist...</div><div class="sheet-item red" onclick="deleteTrack('${trackId}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer</div></div>`);}
-async function deleteTrack(id){var t=tracks.find(x=>x.id===id);if(!t) return;var ti=tracks.indexOf(t);try{await fetch(API+'?action=delete&key='+encodeURIComponent(t.key)+'&fileId='+encodeURIComponent(t.fileId||''));}catch(_){}tracks=tracks.filter(x=>x.id!==id);playlists.forEach(pl=>{pl.trackIds=pl.trackIds.filter(x=>x!==id);});albums.forEach(alb=>{alb.trackIds=alb.trackIds.filter(x=>x!==id);});artists.forEach(ar=>{ar.trackIds=ar.trackIds.filter(x=>x!==id);});await saveMeta();if(cur===ti){cur=null;isPlaying=false;aud.pause();aud.src='';updateMiniPlayer();}else if(cur!==null&&ti<cur) cur--;renderHome();notify('Supprimé ✓');}
+function openTrackMenu(e,trackId){e.stopPropagation();var t=tracks.find(x=>x.id===trackId);if(!t) return;var plItems=playlists.map(pl=>`<div class="sheet-item" onclick="addToPlaylist('${trackId}','${pl.id}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>${esc(pl.name)}</div>`).join('');showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(t.name)}</div>${plItems}<div class="sheet-item" onclick="closeModal();newPlaylistWithTrack('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nouvelle playlist...</div><div class="sheet-item" onclick="closeModal();editTrackMetadata('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Éditer</div><div class="sheet-item red" onclick="deleteTrack('${trackId}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer</div></div>`);}
+
+function editTrackMetadata(trackId){
+  var t = tracks.find(x=>x.id===trackId);
+  if(!t) return;
+  showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">Éditer: ${esc(t.name)}</div>
+  <div style="padding:15px;display:flex;flex-direction:column;gap:12px">
+    <div><label style="font-size:12px;color:var(--sub);display:block;margin-bottom:6px">Titre</label><input type="text" id="edit-title" value="${esc(t.name)}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px"></div>
+    <div><label style="font-size:12px;color:var(--sub);display:block;margin-bottom:6px">Artiste</label><input type="text" id="edit-artist" value="${esc(t.artist||'')}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px"></div>
+    <div><label style="font-size:12px;color:var(--sub);display:block;margin-bottom:6px">Image (URL ou couleur)</label><input type="text" id="edit-img" value="${esc(t.imgUrl||'')}" placeholder="#FF5733 ou https://..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px"></div>
+    <div><label style="font-size:12px;color:var(--sub);display:block;margin-bottom:6px">Ou télécharger une image</label><input type="file" id="edit-imgfile" accept="image/*" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px"></div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="d-btn cancel" style="flex:1" onclick="closeModal()">Annuler</button>
+      <button class="d-btn confirm" style="flex:1" onclick="saveTrackMetadata('${trackId}')">Enregistrer</button>
+    </div>
+  </div></div>`);
+}
+
+async function saveTrackMetadata(trackId){
+  var t = tracks.find(x=>x.id===trackId);
+  if(!t) return;
+  t.name = document.getElementById('edit-title').value || t.name;
+  t.artist = document.getElementById('edit-artist').value || 'Artiste inconnu';
+  
+  var imgFile = document.getElementById('edit-imgfile').files[0];
+  if(imgFile){
+    var reader = new FileReader();
+    reader.onload = (e) => {
+      t.imgUrl = e.target.result;
+      saveMeta();
+      renderHome();
+      closeModal();
+      notify('Métadonnées mises à jour ✓');
+    };
+    reader.readAsDataURL(imgFile);
+  } else {
+    t.imgUrl = document.getElementById('edit-img').value || '';
+    await saveMeta();
+    renderHome();
+    closeModal();
+    notify('Métadonnées mises à jour ✓');
+  }
+}
 
 /* ═══════════════════════════════
    FIX 4: UP NEXT QUEUE with touch drag-to-reorder
@@ -720,7 +909,73 @@ function initQueueDrag(){
 }
 
 /* PLAYBACK */
-function playAt(idx){var t=tracks[idx];if(!t||!dlToken) return;cur=idx;aud.src=rawUrl(t.key);aud.load();aud.play().catch(e=>console.error(e));renderHome();renderPlDetail();renderAlbumDetail();renderArtistDetail();updateMiniPlayer();updatePlayerScreen();}
+
+/* ═══════════════════════════════════════════════════════════════
+   CACHE ÉCONOMIQUE - CORRECTED VERSION V2.1
+   
+   MÉCANISME:
+   1. Cherche d'abord en cache IndexedDB
+      ├─ Trouvé? → Lecture instantanée (0 MB)
+      └─ Non trouvé? → Télécharge UNE SEULE FOIS (4.5 MB)
+   
+   2. Un SEUL fetch() du fichier
+      └─ Utilisé pour DEUX choses:
+         ├─ Sauvegarde en cache (pérenne)
+         └─ Lecture immédiate (sans attente)
+   
+   RÉSULTAT:
+   ✅ 1ère écoute: 4.5 MB (une fois)
+   ✅ 2e écoute: 0 MB (cache)
+   ✅ 3e écoute: 0 MB (cache)
+   ✅ Total: 4.5 MB pour 3 lectures (vs 13.5 MB avant)
+   
+   ÉCONOMIES: 67% des données! 📉
+   ═══════════════════════════════════════════════════════════════ */
+
+function playAt(idx){
+  var t=tracks[idx];
+  if(!t||!dlToken) return;
+  cur=idx;
+  
+  // Cherche d'abord en cache
+  getCachedTrack(t.id).then(cached => {
+    if(cached){
+      // ✅ TROUVÉ EN CACHE: Lecture instantanée
+      var blob = new Blob([cached.data]);
+      aud.src = URL.createObjectURL(blob);
+      console.log("📁 Lecture depuis le cache ⚡");
+    } else {
+      // ❌ PAS EN CACHE: Télécharge UNE SEULE FOIS
+      fetch(rawUrl(t.key))
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => {
+          // ✅ Sauvegarde en cache (même fichier)
+          cacheTrack(t.id, arrayBuffer);
+          
+          // ✅ Joue le fichier qu'on vient de télécharger
+          var blob = new Blob([arrayBuffer]);
+          aud.src = URL.createObjectURL(blob);
+          
+          console.log("💾 Téléchargé et mis en cache!");
+          aud.load();
+          aud.play().catch(e=>console.error(e));
+          
+          renderHome();renderPlDetail();renderAlbumDetail();
+          renderArtistDetail();updateMiniPlayer();updatePlayerScreen();
+        })
+        .catch(e => {
+          console.error("Erreur téléchargement:", e);
+          notify("Erreur de lecture");
+        });
+      return; // Sort pour ne pas doubler l'appel play
+    }
+    
+    aud.load();
+    aud.play().catch(e=>console.error(e));
+    renderHome();renderPlDetail();renderAlbumDetail();
+    renderArtistDetail();updateMiniPlayer();updatePlayerScreen();
+  });
+}
 function togglePlay(){if(cur===null) return;if(isPlaying){aud.pause();isPlaying=false;}else{aud.play().catch(()=>{});isPlaying=true;}updatePlayBtns();renderHome();renderPlDetail();}
 function getNextIdx(){var q=getQ();if(!q.length) return null;if(isShuffle){var i;do{i=Math.floor(Math.random()*q.length);}while(q.length>1&&tracks.indexOf(q[i])===cur);return tracks.indexOf(q[i]);}var ci=q.findIndex(t=>tracks.indexOf(t)===cur);return tracks.indexOf(q[(ci+1)%q.length]);}
 function getPrevIdx(){var q=getQ();if(!q.length) return null;var ci=q.findIndex(t=>tracks.indexOf(t)===cur);return tracks.indexOf(q[(ci-1+q.length)%q.length]);}
@@ -760,7 +1015,9 @@ var fileId=await new Promise((resolve,reject)=>{var xhr=new XMLHttpRequest();xhr
 item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(name)}</span><span class="updone">✓ Uploadé</span>`;item.querySelector('.upbg').style.display='none';tracks.push({id,key,name,artist:'Artiste inconnu',hue:hue(name),fileId});await saveMeta();renderHome();notify('✓ '+name+' ajouté');}
 catch(err){item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(name)}</span><span class="uperr">✗ ${esc(err.message)}</span>`;item.querySelector('.upbg').style.display='none';notify('Erreur: '+err.message.slice(0,50));}}
 
-async function init(){try{var r=await fetch(API+'?action=init');if(!r.ok) throw new Error('Serveur indisponible ('+r.status+')');var d=await r.json();if(d.error) throw new Error(d.error);tracks=Array.isArray(d.tracks)?d.tracks:[];playlists=Array.isArray(d.playlists)?d.playlists:[];albums=Array.isArray(d.albums)?d.albums:[];artists=Array.isArray(d.artists)?d.artists:[];dlUrl=d.downloadUrl;dlToken=d.downloadToken;document.getElementById('loading').style.display='none';renderHome();}catch(e){document.getElementById('ldmsg').textContent='❌ '+e.message;document.getElementById('ldmsg').style.color='#ff4d4d';document.querySelector('.spin').style.display='none';}}
+async function deleteTrack(id){var t=tracks.find(x=>x.id===id);if(!t) return;var ti=tracks.indexOf(t);try{await fetch(API+'?action=delete&key='+encodeURIComponent(t.key)+'&fileId='+encodeURIComponent(t.fileId||''));}catch(_){}await deleteCachedTrack(id);tracks=tracks.filter(x=>x.id!==id);playlists.forEach(pl=>{pl.trackIds=pl.trackIds.filter(x=>x!==id);});albums.forEach(alb=>{alb.trackIds=alb.trackIds.filter(x=>x!==id);});artists.forEach(ar=>{ar.trackIds=ar.trackIds.filter(x=>x!==id);});await saveMeta();if(cur===ti){cur=null;isPlaying=false;aud.pause();aud.src='';updateMiniPlayer();}else if(cur!==null&&ti<cur) cur--;renderHome();notify('Supprimé ✓');}
+
+async function init(){try{var r=await fetch(API+'?action=init');if(!r.ok) throw new Error('Serveur indisponible ('+r.status+')');var d=await r.json();if(d.error) throw new Error(d.error);tracks=Array.isArray(d.tracks)?d.tracks:[];playlists=Array.isArray(d.playlists)?d.playlists:[];albums=Array.isArray(d.albums)?d.albums:[];artists=Array.isArray(d.artists)?d.artists:[];dlUrl=d.downloadUrl;dlToken=d.downloadToken;await initCache();updateStorageDisplay();document.getElementById('loading').style.display='none';renderHome();}catch(e){document.getElementById('ldmsg').textContent='❌ '+e.message;document.getElementById('ldmsg').style.color='#ff4d4d';document.querySelector('.spin').style.display='none';}}
 init();
 </script>
 </body>
