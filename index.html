@@ -124,10 +124,12 @@
     .artd-sub{font-size:13px;color:var(--sub);margin-top:4px;}
     .artd-section{font-size:16px;font-weight:700;padding:14px 0 8px;color:var(--text);}
 
-    /* FIX 3: Mini-player hidden in player screen */
-    #mini-player{position:fixed;bottom:calc(var(--nav-h)+var(--safe-b)+4px);left:10px;right:10px;height:var(--mini-h);background:var(--mini-bg);border-radius:18px;display:flex;align-items:center;padding:0 10px;cursor:pointer;z-index:90;box-shadow:var(--sh);transform:translateY(200px);opacity:0;transition:transform .36s cubic-bezier(.4,0,.2,1),opacity .36s;border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+    /* BOTTOM WRAP — conteneur fixé en bas qui contient mini player + nav */
+    #bottom-wrap{position:fixed;bottom:0;left:0;right:0;z-index:90;}
+    /* Mini-player : positionné dans le wrapper, pas de position:fixed propre */
+    #mini-player{position:relative;left:auto;right:auto;bottom:auto;margin:0 10px 4px;height:var(--mini-h);background:var(--mini-bg);border-radius:18px;display:flex;align-items:center;padding:0 10px;cursor:pointer;box-shadow:var(--sh);transform:translateY(calc(100% + 10px));opacity:0;transition:transform .36s cubic-bezier(.4,0,.2,1),opacity .36s;border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
     #mini-player.show{transform:translateY(0);opacity:1;}
-    #mini-player.hidden-in-player{transform:translateY(200px)!important;opacity:0!important;pointer-events:none!important;}
+    #mini-player.hidden-in-player{transform:translateY(calc(100% + 10px))!important;opacity:0!important;pointer-events:none!important;}
     .mp-art{width:44px;height:44px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-right:10px;}
     .mp-info{flex:1;min-width:0;}
     .mp-name{font-size:14px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -138,8 +140,8 @@
     .mp-prog{position:absolute;bottom:0;left:10px;right:10px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;}
     .mp-prog-fill{height:100%;background:var(--acc);border-radius:2px;transition:width .1s linear;}
 
-    /* BOTTOM NAV */
-    #bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h)+var(--safe-b));background:var(--nav-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;z-index:80;}
+    /* BOTTOM NAV — dans le wrapper, plus de position:fixed propre */
+    #bottom-nav{position:relative;bottom:auto;left:auto;right:auto;width:100%;height:calc(var(--nav-h)+var(--safe-b));background:var(--nav-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;}
     .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 4px;background:transparent;border:none;}
     .nav-item svg{transition:transform .15s;color:var(--sub);}
     .nav-item.active svg{transform:scale(1.08);color:var(--acc);}
@@ -270,7 +272,7 @@
     #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:300;}
     .spin{width:28px;height:28px;border:2.5px solid var(--card2);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg)}}
-    #notif{position:fixed;bottom:calc(var(--nav-h)+var(--safe-b)+var(--mini-h)+16px);left:50%;transform:translateX(-50%);background:var(--card);border-radius:12px;padding:9px 18px;font-size:13px;font-weight:500;color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:250;box-shadow:var(--sh);border:1px solid var(--border);}
+    #notif{position:fixed;bottom:calc(var(--nav-h) + var(--mini-h) + 24px);left:50%;transform:translateX(-50%);background:var(--card);border-radius:12px;padding:9px 18px;font-size:13px;font-weight:500;color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:250;box-shadow:var(--sh);border:1px solid var(--border);}
     #notif.show{opacity:1;}
     .empty-state{padding:50px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;}
     .empty-icon{width:68px;height:68px;border-radius:18px;background:var(--card2);display:flex;align-items:center;justify-content:center;}
@@ -503,6 +505,9 @@
   </div>
 </div>
 
+<!-- BOTTOM WRAP : mini player + nav groupés en bas -->
+<div id="bottom-wrap">
+
 <!-- MINI PLAYER -->
 <div id="mini-player" onclick="openPlayer()">
   <div class="mp-art" id="mp-art"></div>
@@ -540,6 +545,7 @@
     <span class="nav-label">Cache</span>
   </button>
 </div>
+</div><!-- /#bottom-wrap -->
 
 <div id="notif"></div>
 <audio id="aud" preload="none"></audio>
