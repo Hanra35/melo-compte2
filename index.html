@@ -466,30 +466,19 @@
       </div>
     </div>
 
-    <!-- Cache local IndexedDB -->
-    <div style="background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--sh2);">
-      <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">Cache local (appareil)</p>
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;">
-        <span id="storage-cache" style="font-size:30px;font-weight:800;color:var(--acc);">0</span>
-        <span style="font-size:14px;color:var(--sub);">MB utilisés</span>
-      </div>
-      <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;margin-bottom:10px;">
-        <div id="storage-bar" style="height:100%;background:var(--acc);border-radius:3px;width:0%;transition:width .4s;"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="display:flex;gap:18px;">
-          <div><p id="storage-tracks-count" style="font-size:18px;font-weight:700;color:var(--text);">0</p><p style="font-size:11px;color:var(--sub);">titres total</p></div>
-          <div><p id="storage-cache-count" style="font-size:18px;font-weight:700;color:var(--acc);">0</p><p style="font-size:11px;color:var(--sub);">en cache</p></div>
-          <div><p id="storage-used" style="font-size:18px;font-weight:700;color:var(--orange);">0</p><p style="font-size:11px;color:var(--sub);">MB</p></div>
+    <!-- Info streaming -->
+    <div style="background:linear-gradient(135deg,var(--acc)22,var(--acc)11);border:1px solid var(--acc)44;border-radius:18px;padding:18px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <div style="width:36px;height:36px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div>
+          <p style="font-size:14px;font-weight:700;color:var(--text);">Streaming progressif actif</p>
+          <p style="font-size:12px;color:var(--sub);">Comme Spotify — zéro gaspillage de data</p>
         </div>
       </div>
+      <p style="font-size:12px;color:var(--sub);line-height:1.5;">Seules les secondes en cours de lecture sont téléchargées. Si tu passes à la chanson suivante, le chargement s'arrête immédiatement.</p>
     </div>
-
-    <button onclick="clearAllCache()" style="width:100%;background:var(--card);border:1px solid rgba(255,77,77,.3);border-radius:16px;padding:16px;color:#ff4d4d;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-      Vider le cache local
-    </button>
-    <p style="text-align:center;font-size:12px;color:var(--sub);margin-top:10px;">Le cache local permet la lecture hors-ligne</p>
   </div>
 </div>
 
@@ -497,10 +486,20 @@
 <div id="s-cached-tracks" class="screen hidden">
   <div style="padding:calc(var(--safe-t)+18px) 20px 4px;display:flex;align-items:center;justify-content:space-between;">
     <span class="home-title">Cache</span>
-    <button onclick="playRandomCached()" style="background:var(--acc);border:none;border-radius:12px;padding:8px 16px;color:#fff;font-size:13px;font-weight:600;">Aléatoire</button>
   </div>
-  <div style="flex:1;overflow-y:auto;padding:10px 14px var(--scroll-pb);-webkit-overflow-scrolling:touch;">
-    <div id="cached-list"></div>
+  <div style="flex:1;overflow-y:auto;padding:20px 16px var(--scroll-pb);-webkit-overflow-scrolling:touch;">
+    <div style="text-align:center;padding:40px 20px;">
+      <div style="width:72px;height:72px;background:var(--acc)22;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--acc)"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <p style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Streaming progressif</p>
+      <p style="font-size:14px;color:var(--sub);line-height:1.6;max-width:280px;margin:0 auto;">Le cache local est désactivé. Melo streame ta musique comme Spotify — seules les secondes que tu écoutes sont téléchargées. Aucune donnée n'est gaspillée.</p>
+      <div style="margin-top:24px;background:var(--card);border-radius:16px;padding:16px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:8px;height:8px;background:#4ade80;border-radius:50%;"></div><span style="font-size:13px;color:var(--text);">Lecture instantanée sans attente</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:8px;height:8px;background:#4ade80;border-radius:50%;"></div><span style="font-size:13px;color:var(--text);">Zéro gaspillage si tu skips</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><div style="width:8px;height:8px;background:#4ade80;border-radius:50%;"></div><span style="font-size:13px;color:var(--text);">Compatible iPhone 6s et tous appareils</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -558,115 +557,24 @@ var pickerSelected=[],pickerTarget=null,pickerType=null;
 var qDragItems=[];
 
 /* ═══════════════════════════════════════════════════════════
-   CACHE ÉCONOMIQUE - IndexedDB
+   STREAMING PUR — Range Requests (comme Spotify)
+   Le navigateur charge seulement les secondes nécessaires.
+   Zéro download complet, zéro cache local.
    ═══════════════════════════════════════════════════════════ */
-const DB_NAME = 'melo-cache-db';
-const DB_VERSION = 1;
-const STORE_NAME = 'cached-tracks';
-const STORAGE_LIMIT = 500 * 1024 * 1024; // 500MB
 
+// Stubs vides pour compatibilité avec le reste du code
 var db = null;
 var cachedTrackIds = new Set();
-
-async function initCache(){
-  return new Promise((resolve, reject) => {
-    var req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => {
-      db = req.result;
-      loadCachedList();
-      resolve();
-    };
-    req.onupgradeneeded = (e) => {
-      var database = e.target.result;
-      if(!database.objectStoreNames.contains(STORE_NAME)) {
-        database.createObjectStore(STORE_NAME, {keyPath: 'trackId'});
-      }
-    };
-  });
-}
-
-async function cacheTrack(trackId, arrayBuffer){
-  if(!db) return;
-  return new Promise((resolve) => {
-    var tx = db.transaction([STORE_NAME], 'readwrite');
-    var store = tx.objectStore(STORE_NAME);
-    store.put({trackId, data: arrayBuffer, timestamp: Date.now()});
-    tx.oncomplete = () => {
-      cachedTrackIds.add(trackId);
-      updateStorageDisplay();
-      resolve();
-    };
-  });
-}
-
-async function getCachedTrack(trackId){
-  if(!db) return null;
-  return new Promise((resolve) => {
-    var tx = db.transaction([STORE_NAME], 'readonly');
-    var store = tx.objectStore(STORE_NAME);
-    var req = store.get(trackId);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => resolve(null);
-  });
-}
-
-async function loadCachedList(){
-  if(!db) return;
-  cachedTrackIds.clear();
-  return new Promise((resolve) => {
-    var tx = db.transaction([STORE_NAME], 'readonly');
-    var store = tx.objectStore(STORE_NAME);
-    var req = store.getAll();
-    req.onsuccess = () => {
-      req.result.forEach(item => cachedTrackIds.add(item.trackId));
-      resolve();
-    };
-  });
-}
-
-async function clearAllCache(){
-  if(!window.confirm('Vider tout le cache? ('+getCacheSize()+'MB)')) return;
-  if(!db) return;
-  return new Promise((resolve) => {
-    var tx = db.transaction([STORE_NAME], 'readwrite');
-    var store = tx.objectStore(STORE_NAME);
-    store.clear();
-    tx.oncomplete = () => {
-      cachedTrackIds.clear();
-      updateStorageDisplay();
-      renderCachedTracks();
-      notify('Cache vidé ✓');
-      resolve();
-    };
-  });
-}
-
-async function deleteCachedTrack(trackId){
-  if(!db) return;
-  return new Promise((resolve) => {
-    var tx = db.transaction([STORE_NAME], 'readwrite');
-    var store = tx.objectStore(STORE_NAME);
-    store.delete(trackId);
-    tx.oncomplete = () => {
-      cachedTrackIds.delete(trackId);
-      updateStorageDisplay();
-      resolve();
-    };
-  });
-}
-
-function getCacheSize(){
-  return Math.round(cachedTrackIds.size * 4.5); // Approximation: 4.5MB par chanson
-}
+async function initCache(){ /* plus de cache */ }
+async function cacheTrack(){ /* streaming pur */ }
+async function getCachedTrack(){ return null; }
+async function loadCachedList(){ }
+async function clearAllCache(){ notify('Le cache est désactivé — streaming pur activé'); }
+async function deleteCachedTrack(id){ cachedTrackIds.delete(id); }
+function getCacheSize(){ return 0; }
 
 function updateStorageDisplay(){
-  var cacheSize = getCacheSize();
-  var percent = Math.min(100, (cacheSize / 500) * 100);
-  ['storage-cache','storage-used'].forEach(id=>{var el=document.getElementById(id);if(el)el.textContent=cacheSize;});
-  var bar=document.getElementById('storage-bar');if(bar)bar.style.width=percent+'%';
   var tc=document.getElementById('storage-tracks-count');if(tc)tc.textContent=tracks.length;
-  var cc=document.getElementById('storage-cache-count');if(cc)cc.textContent=cachedTrackIds.size;
 }
 
 var bucketInfoLoaded = false;
@@ -1104,44 +1012,24 @@ function initQueueDrag(){
    ═══════════════════════════════════════════════════════════════ */
 
 function playAt(idx){
-  var t=tracks[idx];
-  if(!t||!dlToken) return;
-  cur=idx;
+  var t = tracks[idx];
+  if(!t || !dlToken) return;
+  cur = idx;
 
-  // Detect Safari / iOS
-  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-    || /iPad|iPhone|iPod/.test(navigator.userAgent);
+  // ── STREAMING PUR comme Spotify ──────────────────────────
+  // On passe l'URL directe au <audio>. Le navigateur envoie
+  // automatiquement des Range Requests (ex: bytes=0-65535)
+  // et ne charge que les secondes nécessaires. Si on change
+  // de chanson, le chargement s'arrête immédiatement.
+  // Zéro download complet. Zéro gaspillage de data.
+  // ─────────────────────────────────────────────────────────
+  aud.src = rawUrl(t.key);
+  aud.load();
+  aud.play().catch(e => console.error('play error:', e));
 
-  function startPlay(src){
-    aud.src = src;
-    aud.load();
-    aud.play().catch(e=>console.error('play error:',e));
-    renderHome();renderPlDetail();renderAlbumDetail();
-    renderArtistDetail();updateMiniPlayer();updatePlayerScreen();
-    setupMediaSession();
-  }
-
-  getCachedTrack(t.id).then(cached => {
-    if(cached && !isSafari){
-      // Cache hit — use Blob URL (works on Chrome/Firefox)
-      var blob = new Blob([cached.data]);
-      startPlay(URL.createObjectURL(blob));
-      console.log('📁 Cache ⚡');
-    } else {
-      // Safari or not cached: use direct URL (Safari requires this)
-      var directUrl = rawUrl(t.key);
-      startPlay(directUrl);
-      console.log(isSafari ? '🍎 Safari — URL directe' : '🌐 Streaming');
-
-      // Cache in background (non-Safari only, Safari fetch+arrayBuffer unreliable for blobs)
-      if(!isSafari && !cached){
-        fetch(directUrl)
-          .then(r => r.arrayBuffer())
-          .then(ab => { cacheTrack(t.id, ab); console.log('💾 Mis en cache!'); })
-          .catch(e => console.warn('Cache bg failed:', e));
-      }
-    }
-  });
+  renderHome(); renderPlDetail(); renderAlbumDetail();
+  renderArtistDetail(); updateMiniPlayer(); updatePlayerScreen();
+  setupMediaSession();
 }
 function togglePlay(){if(cur===null) return;if(isPlaying){aud.pause();isPlaying=false;}else{aud.play().catch(()=>{});isPlaying=true;}updatePlayBtns();renderHome();renderPlDetail();}
 function getNextIdx(){var q=getQ();if(!q.length) return null;if(isShuffle){var i;do{i=Math.floor(Math.random()*q.length);}while(q.length>1&&tracks.indexOf(q[i])===cur);return tracks.indexOf(q[i]);}var ci=q.findIndex(t=>tracks.indexOf(t)===cur);return tracks.indexOf(q[(ci+1)%q.length]);}
