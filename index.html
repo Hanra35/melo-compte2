@@ -176,7 +176,22 @@
     .pc-play:active{transform:scale(.93);}
     .player-vol{display:flex;align-items:center;padding:4px 26px 14px;}
     .player-vol svg{color:var(--sub);flex-shrink:0;}
-    .vol-sp{width:10px;}
+    /* ── LYRICS ── */
+    .lyrics-section{padding:0 20px 30px;}
+    .lyrics-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+    .lyrics-title{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.08em;text-transform:uppercase;}
+    .lyrics-edit-btn{background:var(--card2);border:none;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--sub);}
+    .lyrics-container{position:relative;max-height:280px;overflow:hidden;mask-image:linear-gradient(to bottom,transparent 0%,black 12%,black 80%,transparent 100%);-webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 12%,black 80%,transparent 100%);}
+    .lyrics-scroll{overflow-y:auto;max-height:280px;scroll-behavior:smooth;padding:30px 0;}
+    .lrc-line{font-size:18px;font-weight:600;color:var(--sub);line-height:1.6;padding:6px 0;transition:color .3s,transform .3s,font-size .3s;transform-origin:left center;opacity:.45;cursor:pointer;}
+    .lrc-line.active{color:var(--text);font-size:22px;opacity:1;transform:scale(1.03);}
+    .lrc-line.past{opacity:.3;}
+    .lyrics-empty{text-align:center;padding:24px 0;color:var(--sub);font-size:14px;line-height:1.7;}
+    /* Lyrics editor modal */
+    .lrc-editor-wrap{padding:0 18px 18px;}
+    .lrc-textarea{width:100%;min-height:220px;background:var(--card2);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:12px;font-family:monospace;padding:12px;resize:vertical;outline:none;line-height:1.7;box-sizing:border-box;}
+    .lrc-help{font-size:11px;color:var(--sub);line-height:1.6;margin-top:8px;}
+    .lrc-save-btn{width:100%;margin-top:14px;background:var(--acc);border:none;border-radius:14px;padding:13px;color:#fff;font-size:15px;font-weight:700;}    .vol-sp{width:10px;}
     input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--card2);outline:none;flex:1;}
     input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--acc);}
 
@@ -253,7 +268,7 @@
     /* MODALS */
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
     .modal-bg.center{align-items:center;}
-    .sheet{background:var(--card);border-radius:22px 22px 0 0;width:100%;max-width:500px;padding:10px 0 calc(16px + var(--safe-b));}
+    .sheet{background:var(--card);border-radius:22px 22px 0 0;width:100%;max-width:500px;padding:10px 0 calc(16px + var(--safe-b));max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
     .sheet.dialog{border-radius:18px;padding:22px;max-width:320px;margin:16px;}
     .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
     .sheet-title{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;padding:0 18px 8px;}
@@ -436,8 +451,16 @@
       <span class="vol-sp"></span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
     </div>
-  </div>
-</div>
+    <!-- PAROLES SYNCHRONISÉES -->
+    <div class="lyrics-section">
+      <div class="lyrics-header">
+        <span class="lyrics-title">Paroles</span>
+        <button class="lyrics-edit-btn" onclick="openLyricsEditor()">Modifier</button>
+      </div>
+      <div class="lyrics-container"><div class="lyrics-scroll" id="lyrics-scroll"><div id="lyrics-lines"></div></div></div>
+    </div><!-- /lyrics-section -->
+  </div><!-- /player-scroll -->
+</div><!-- /s-player -->
 
 <!-- STOCKAGE -->
 <div id="s-storage" class="screen hidden">
@@ -665,7 +688,88 @@ const genId=()=>Date.now()+'_'+Math.random().toString(36).slice(2);
 const noteIco=(sz,col)=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="${col}"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>`;
 function notify(m,ms){ms=ms||2400;var el=document.getElementById('notif');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),ms);}
 
-/* THEME */
+/* ════════════════════════════════════════════
+   PAROLES SYNCHRONISÉES (LRC)
+   ════════════════════════════════════════════ */
+var lrcLines=[];  // [{time:seconds, text:string}, ...]
+var lrcActiveIdx=-1;
+
+function parseLRC(lrcText){
+  if(!lrcText) return [];
+  var lines=[];
+  lrcText.split('\n').forEach(function(raw){
+    var m=raw.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
+    if(m){
+      var secs=parseInt(m[1])*60+parseFloat(m[2]);
+      var txt=(m[3]||'').trim();
+      if(txt) lines.push({time:secs,text:txt});
+    }
+  });
+  return lines.sort((a,b)=>a.time-b.time);
+}
+
+function loadLyricsForTrack(){
+  var t=cur!==null?tracks[cur]:null;
+  var el=document.getElementById('lyrics-lines');
+  if(!el) return;
+  lrcLines=t&&t.lrc?parseLRC(t.lrc):[];
+  lrcActiveIdx=-1;
+  if(!lrcLines.length){
+    el.innerHTML='<div class="lyrics-empty">Aucune parole.<br>Appuie sur <b>Modifier</b> pour en ajouter.</div>';
+    return;
+  }
+  el.innerHTML=lrcLines.map((l,i)=>`<div class="lrc-line" id="lrc-${i}" onclick="aud.currentTime=${l.time}">${esc(l.text)}</div>`).join('');
+}
+
+function updateLyricsSync(ct){
+  if(!lrcLines.length) return;
+  var newIdx=-1;
+  for(var i=lrcLines.length-1;i>=0;i--){
+    if(ct>=lrcLines[i].time){newIdx=i;break;}
+  }
+  if(newIdx===lrcActiveIdx) return;
+  lrcActiveIdx=newIdx;
+  var container=document.getElementById('lyrics-scroll');
+  lrcLines.forEach((_,i)=>{
+    var el=document.getElementById('lrc-'+i);
+    if(!el) return;
+    el.classList.toggle('active',i===newIdx);
+    el.classList.toggle('past',i<newIdx);
+  });
+  // Scroll auto vers la ligne active
+  if(newIdx>=0&&container){
+    var activeLine=document.getElementById('lrc-'+newIdx);
+    if(activeLine){
+      var lineTop=activeLine.offsetTop;
+      var targetScroll=lineTop-container.clientHeight/2+activeLine.clientHeight/2;
+      container.scrollTo({top:Math.max(0,targetScroll),behavior:'smooth'});
+    }
+  }
+}
+
+function openLyricsEditor(){
+  var t=cur!==null?tracks[cur]:null;
+  if(!t){notify('Aucune chanson en cours');return;}
+  var current=t.lrc||'';
+  showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">Paroles — ${esc(t.name)}</div><div class="lrc-editor-wrap"><textarea class="lrc-textarea" id="lrc-ta" placeholder="[00:12.50] Première ligne\n[00:15.30] Deuxième ligne\n[01:02.00] Refrain...">${esc(current)}</textarea><p class="lrc-help">Format LRC : chaque ligne commence par <b>[mm:ss.xx]</b> suivi du texte.<br>Tu peux trouver des fichiers .lrc sur internet et les coller ici.</p><button class="lrc-save-btn" onclick="saveLyrics('${t.id}')">Enregistrer</button></div></div>`);
+}
+
+function editLyricsForTrack(trackId){var t=tracks.find(x=>x.id===trackId);if(!t) return;var current=t.lrc||'';showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">Paroles — ${esc(t.name)}</div><div class="lrc-editor-wrap"><textarea class="lrc-textarea" id="lrc-ta" placeholder="[00:12.50] Première ligne\n[00:15.30] Deuxième ligne\n[01:02.00] Refrain...">${esc(current)}</textarea><p class="lrc-help">Format LRC : <b>[mm:ss.xx]</b> suivi du texte.<br>Cherche "<b>${esc(t.name)} lrc</b>" sur internet pour trouver les paroles.</p><button class="lrc-save-btn" onclick="saveLyrics('${t.id}')">Enregistrer</button></div></div>`);}
+
+function saveLyrics(trackId){
+
+
+  var ta=document.getElementById('lrc-ta');
+  if(!ta) return;
+  var t=tracks.find(x=>x.id===trackId);
+  if(!t) return;
+  t.lrc=ta.value.trim();
+  saveMeta();
+  closeModal();
+  loadLyricsForTrack();
+  notify('Paroles enregistrées ✓');
+}
+
 var isDark=true;
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle('light',!isDark);var i=document.getElementById('theme-ico');if(isDark){i.innerHTML='<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';}else{i.setAttribute('stroke','var(--sub)');i.setAttribute('fill','none');i.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';}}
 
@@ -866,7 +970,7 @@ async function removeFromPl(e,plId,tid){e.stopPropagation();var pl=playlists.fin
 
 /* TRACK MENU */
 function rowClick(e,idx){if(!e.target.closest('.song-menu')) playAt(idx);}
-function openTrackMenu(e,trackId){e.stopPropagation();var t=tracks.find(x=>x.id===trackId);if(!t) return;var plItems=playlists.map(pl=>`<div class="sheet-item" onclick="addToPlaylist('${trackId}','${pl.id}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>${esc(pl.name)}</div>`).join('');showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(t.name)}</div>${plItems}<div class="sheet-item" onclick="closeModal();newPlaylistWithTrack('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nouvelle playlist...</div><div class="sheet-item" onclick="closeModal();editTrackMetadata('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Éditer</div><div class="sheet-item red" onclick="deleteTrack('${trackId}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer</div></div>`);}
+function openTrackMenu(e,trackId){e.stopPropagation();var t=tracks.find(x=>x.id===trackId);if(!t) return;var plItems=playlists.map(pl=>`<div class="sheet-item" onclick="addToPlaylist('${trackId}','${pl.id}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>${esc(pl.name)}</div>`).join('');var hasLyrics=t.lrc&&t.lrc.trim();showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(t.name)}</div>${plItems}<div class="sheet-item" onclick="closeModal();newPlaylistWithTrack('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nouvelle playlist...</div><div class="sheet-item" onclick="closeModal();editLyricsForTrack('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="${hasLyrics?'var(--acc)':'var(--sub)'}"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17h8v-2H8v2zm0-4h8v-2H8v2zm0-4h5V7H8v2z"/></svg>Paroles${hasLyrics?' ✓':''}</div><div class="sheet-item" onclick="closeModal();editTrackMetadata('${trackId}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Éditer</div><div class="sheet-item red" onclick="deleteTrack('${trackId}');closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer</div></div>`);}
 
 function editTrackMetadata(trackId){
   var t = tracks.find(x=>x.id===trackId);
@@ -1061,7 +1165,7 @@ function toggleLike(){var t=tracks[cur];if(!t) return;if(liked.has(t.id)){liked.
 
 function updatePlayBtns(){var p=isPlaying?'M6 19h4V5H6v14zm8-14v14h4V5h-4z':'M8 5v14l11-7z';document.getElementById('pc-ico').innerHTML=`<path d="${p}"/>`;document.getElementById('mp-ico').innerHTML=`<path d="${p}"/>`;}
 function updateMiniPlayer(){var mp=document.getElementById('mini-player');if(cur===null){mp.classList.remove('show');return;}var t=tracks[cur],h=t.hue||hue(t.name);mp.classList.add('show');var mpArt=document.getElementById('mp-art');if(t.imgUrl){mpArt.style.background='';mpArt.style.backgroundImage="url('"+t.imgUrl+"')";mpArt.style.backgroundSize='cover';mpArt.style.backgroundPosition='center';mpArt.innerHTML='';}else{mpArt.style.backgroundImage='';mpArt.style.background=abg(h);mpArt.innerHTML=noteIco(18,'rgba(255,255,255,.8)');}document.getElementById('mp-name').textContent=t.name;document.getElementById('mp-artist').textContent=t.artist;updatePlayBtns();}
-function updatePlayerScreen(){if(cur===null) return;var t=tracks[cur],h=t.hue||hue(t.name);var pa=document.getElementById('player-art');if(t.imgUrl){pa.style.backgroundImage="url('"+t.imgUrl+"')";pa.style.backgroundSize='cover';pa.style.backgroundPosition='center';pa.style.background='';pa.innerHTML='';}else{pa.style.backgroundImage='';pa.style.background=`linear-gradient(135deg,${abg(h)},${abg2(h)})`;pa.innerHTML=noteIco(80,'rgba(255,255,255,.4)');}pa.classList.remove('pulse');requestAnimationFrame(()=>pa.classList.add('pulse'));document.getElementById('player-title').textContent=t.name;document.getElementById('player-artist').textContent=t.artist;document.querySelector('#like-btn svg').style.fill=liked.has(t.id)?'#ff4d4d':'var(--sub)';updatePlayBtns();}
+function updatePlayerScreen(){if(cur===null) return;var t=tracks[cur],h=t.hue||hue(t.name);var pa=document.getElementById('player-art');if(t.imgUrl){pa.style.backgroundImage="url('"+t.imgUrl+"')";pa.style.backgroundSize='cover';pa.style.backgroundPosition='center';pa.style.background='';pa.innerHTML='';}else{pa.style.backgroundImage='';pa.style.background=`linear-gradient(135deg,${abg(h)},${abg2(h)})`;pa.innerHTML=noteIco(80,'rgba(255,255,255,.4)');}pa.classList.remove('pulse');requestAnimationFrame(()=>pa.classList.add('pulse'));document.getElementById('player-title').textContent=t.name;document.getElementById('player-artist').textContent=t.artist;document.querySelector('#like-btn svg').style.fill=liked.has(t.id)?'#ff4d4d':'var(--sub)';updatePlayBtns();loadLyricsForTrack();}
 
 /* ═══════════════════════════════════════════════════════════
    MEDIA SESSION — Contrôles écran verrouillage / notification
@@ -1122,6 +1226,7 @@ function generateArtworkDataUrl(t){
 document.getElementById('seek-track').addEventListener('click',e=>{if(!aud.duration) return;var r=e.currentTarget.getBoundingClientRect();aud.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*aud.duration;});
 aud.addEventListener('timeupdate',()=>{var p=aud.duration?(aud.currentTime/aud.duration)*100:0;document.getElementById('seek-fill').style.width=p+'%';document.getElementById('mp-prog-fill').style.width=p+'%';document.getElementById('p-pt').textContent=fmt(aud.currentTime);document.getElementById('p-dt').textContent=fmt(aud.duration);
   if('mediaSession' in navigator && aud.duration && !isNaN(aud.duration)){try{navigator.mediaSession.setPositionState({duration:aud.duration,playbackRate:aud.playbackRate||1,position:aud.currentTime});}catch(_){}}
+  updateLyricsSync(aud.currentTime);
 });
 aud.addEventListener('play',()=>{isPlaying=true;updatePlayBtns();renderHome();renderPlDetail();if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing';});
 aud.addEventListener('pause',()=>{isPlaying=false;updatePlayBtns();renderHome();renderPlDetail();if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';});
