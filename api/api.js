@@ -98,7 +98,7 @@ module.exports = async (req, res) => {
             meta.playlists = Array.isArray(parsed.playlists) ? parsed.playlists : [];
             meta.albums    = Array.isArray(parsed.albums)    ? parsed.albums    : [];
             meta.artists   = Array.isArray(parsed.artists)   ? parsed.artists   : [];
-          }
+            meta.lastModified = parsed.lastModified || 0;          }
         }
       } catch (_) {}
 
@@ -114,6 +114,7 @@ module.exports = async (req, res) => {
         playlists:     meta.playlists,
         albums:        meta.albums,
         artists:       meta.artists,
+        lastModified:  meta.lastModified || 0,
         downloadUrl:   a.downloadUrl,
         downloadToken: dlAuth.authorizationToken,
       });
@@ -163,7 +164,8 @@ module.exports = async (req, res) => {
       const playlists = Array.isArray(body?.playlists) ? body.playlists : [];
       const albums    = Array.isArray(body?.albums)    ? body.albums    : [];
       const artists   = Array.isArray(body?.artists)   ? body.artists   : [];
-      const buf = Buffer.from(JSON.stringify({ tracks, playlists, albums, artists }), 'utf-8');
+      const lastModified = body?.lastModified || Date.now();
+      const buf = Buffer.from(JSON.stringify({ tracks, playlists, albums, artists, lastModified }), 'utf-8');
       const up  = await getUploadUrl(a, bid);
       await b2UploadBuf(up.uploadUrl, up.authorizationToken, META, buf, 'application/json');
       res.status(200).json({ ok: true });
