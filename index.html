@@ -123,6 +123,24 @@
     .artd-name{font-size:22px;font-weight:800;color:var(--text);}
     .artd-sub{font-size:13px;color:var(--sub);margin-top:4px;}
     .artd-section{font-size:16px;font-weight:700;padding:14px 0 8px;color:var(--text);}
+    /* Boutons d'action rapide dans l'artiste */
+    .artd-actions{display:flex;gap:10px;padding:0 0 16px;justify-content:center;}
+    .artd-action-btn{flex:1;max-width:160px;background:var(--card2);border:none;border-radius:14px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;color:var(--sub);}
+    .artd-action-btn span{font-size:11px;font-weight:600;}
+    .artd-action-btn.primary{background:var(--acc);color:#fff;}
+    /* Empty state artiste avec boutons */
+    .artd-empty{text-align:center;padding:20px 14px 30px;}
+    .artd-empty-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+    .artd-empty-sub{font-size:13px;color:var(--sub);margin-bottom:18px;}
+    .artd-empty-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+    .artd-empty-btn{background:var(--acc);border:none;border-radius:14px;padding:11px 18px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;}
+    .artd-empty-btn.secondary{background:var(--card2);color:var(--text);}
+    /* Picker ameliore avec recherche */
+    .pick-search-wrap{padding:8px 18px 4px;}
+    .pick-search-input{width:100%;background:var(--card2);border:none;border-radius:12px;padding:9px 14px;color:var(--text);font-size:14px;box-sizing:border-box;outline:none;}
+    .pick-filter-row{display:flex;gap:8px;padding:4px 18px 8px;overflow-x:auto;}
+    .pick-filter-btn{flex-shrink:0;background:var(--card2);border:none;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;}
+    .pick-filter-btn.on{background:var(--acc);color:#fff;}
 
     /* BOTTOM WRAP — conteneur fixé en bas qui contient mini player + nav */
     #bottom-wrap{position:fixed;bottom:0;left:0;right:0;z-index:90;}
@@ -409,8 +427,11 @@
   <div class="artd-head">
     <button class="back-btn" id="artd-back"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text)"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
     <span style="font-size:16px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);" id="artd-title"></span>
+    <button style="background:var(--acc);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;margin-right:6px;" onclick="showArtistImportMenu()" title="Ajouter des titres"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
     <button style="background:transparent;border:none;padding:4px;" onclick="editCurrentArtist()"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
   </div>
+  <!-- Input file caché pour import direct dans l'artiste -->
+  <input type="file" id="artd-filein" accept=".mp3,.wav,.ogg,.flac,.aac,.m4a" multiple style="display:none">
   <div class="artd-scroll" id="artd-scroll"></div>
 </div>
 
@@ -816,6 +837,7 @@ function songRowHtml(t,i,clickFn,menuFn,removeFn){var h=t.hue||hue(t.name),isCur
    ════════════════════════════════════════ */
 function openTrackPicker(type, targetId){
   pickerTarget=targetId; pickerType=type; pickerSelected=[];
+  window._pickerFilter='all';
   /* Always get fresh data — this is the key fix for bug 1 */
   var existingIds=[];
   if(type==='album'){var o=albums.find(a=>a.id===targetId);if(o) existingIds=o.trackIds.slice();}
@@ -824,9 +846,41 @@ function openTrackPicker(type, targetId){
 
   var available=tracks.filter(t=>!existingIds.includes(t.id));
   if(!available.length){notify('Tous vos titres sont déjà ajoutés');return;}
-  var items=available.map(t=>{var h=t.hue||hue(t.name);return `<div class="pick-item" id="pi-${t.id}" onclick="togglePick('${t.id}')"><div class="pick-art" style="background:${abg(h)}">${noteIco(18,'rgba(255,255,255,.8)')}</div><div class="pick-info"><p class="pick-name">${esc(t.name)}</p><p class="pick-artist">${esc(t.artist)}</p></div><div class="pick-check" id="pc-${t.id}"></div></div>`;}).join('');
-  showModal(`<div class="sheet"><div class="sheet-handle"></div><div style="display:flex;align-items:center;justify-content:space-between;padding:0 18px 4px"><p style="font-size:16px;font-weight:700;color:var(--text)">Sélectionner des titres</p><p style="font-size:12px;color:var(--sub)" id="pick-count">0 sélectionné</p></div><div class="pick-list">${items}</div><button class="pick-confirm" onclick="confirmPick()">Ajouter la sélection</button></div>`);
+
+  // Nombre de titres sans artiste (non assignés)
+  var nbUnknown=available.filter(t=>!t.artist||t.artist==='Artiste inconnu'||t.artist.trim()==='').length;
+  var filterHtml=type==='artist'&&nbUnknown>0
+    ?`<div class="pick-filter-row"><button class="pick-filter-btn on" id="pick-filter-all" onclick="filterPickerItems('all')">Tous (${available.length})</button><button class="pick-filter-btn" id="pick-filter-unknown" onclick="filterPickerItems('unknown')">Non assignes (${nbUnknown})</button></div>`
+    :'';
+
+  var buildItems=function(list){
+    if(!list.length) return `<p style="text-align:center;color:var(--sub);padding:20px;font-size:13px;">Aucun titre trouve</p>`;
+    return list.map(t=>{
+      var h=t.hue||hue(t.name);
+      var isUnknown=!t.artist||t.artist==='Artiste inconnu'||t.artist.trim()==='';
+      var artBadge=!isUnknown?`<span style="color:var(--acc);font-size:10px;font-weight:700;background:rgba(77,207,191,.15);border-radius:4px;padding:1px 5px;margin-left:4px;">${esc(t.artist)}</span>`:'';
+      return `<div class="pick-item" id="pi-${t.id}" onclick="togglePick('${t.id}')"><div class="pick-art" style="background:${abg(h)}">${noteIco(18,'rgba(255,255,255,.8)')}</div><div class="pick-info"><p class="pick-name">${esc(t.name)}${artBadge}</p><p class="pick-artist">${isUnknown?'<span style="color:var(--orange)">Non assigne</span>':esc(t.artist)}</p></div><div class="pick-check" id="pc-${t.id}"></div></div>`;
+    }).join('');
+  };
+  window._pickerAvailable=available;
+  window._pickerBuildItems=buildItems;
+
+  showModal(`<div class="sheet"><div class="sheet-handle"></div><div style="display:flex;align-items:center;justify-content:space-between;padding:0 18px 4px"><p style="font-size:16px;font-weight:700;color:var(--text)">Selectionner des titres</p><p style="font-size:12px;color:var(--sub)" id="pick-count">0 selectionne</p></div><div class="pick-search-wrap"><input class="pick-search-input" id="pick-search" placeholder="Rechercher un titre ou artiste..." oninput="filterPickerSearch(this.value)"></div>${filterHtml}<div class="pick-list" id="pick-list">${buildItems(available)}</div><button class="pick-confirm" onclick="confirmPick()">Ajouter la selection</button></div>`);
 }
+
+function filterPickerItems(mode){
+  window._pickerFilter=mode;
+  document.querySelectorAll('.pick-filter-btn').forEach(b=>b.classList.remove('on'));
+  var btn=document.getElementById('pick-filter-'+(mode==='all'?'all':'unknown'));
+  if(btn) btn.classList.add('on');
+  var q=(document.getElementById('pick-search')?.value||'').toLowerCase().trim();
+  var list=window._pickerAvailable||[];
+  if(mode==='unknown') list=list.filter(t=>!t.artist||t.artist==='Artiste inconnu'||t.artist.trim()==='');
+  if(q) list=list.filter(t=>(t.name+' '+(t.artist||'')).toLowerCase().includes(q));
+  document.getElementById('pick-list').innerHTML=(window._pickerBuildItems||function(){return '';})(list);
+  pickerSelected.forEach(id=>{var ch=document.getElementById('pc-'+id);if(ch){ch.classList.add('checked');ch.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';}});
+}
+function filterPickerSearch(q){filterPickerItems(window._pickerFilter||'all');}
 
 function togglePick(id){var idx=pickerSelected.indexOf(id);if(idx>-1) pickerSelected.splice(idx,1);else pickerSelected.push(id);var el=document.getElementById('pc-'+id);if(el){el.classList.toggle('checked',pickerSelected.includes(id));el.innerHTML=pickerSelected.includes(id)?'<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>':'';}var cnt=document.getElementById('pick-count');if(cnt) cnt.textContent=pickerSelected.length+' sélectionné'+(pickerSelected.length>1?'s':'');}
 
@@ -941,8 +995,65 @@ function playFromAlbum(albId,tid){var alb=albums.find(a=>a.id===albId);if(!alb) 
 /* ARTISTS */
 function renderArtists(){var el=document.getElementById('artists-list');if(!artists.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div><p class="empty-title">Aucun artiste</p><p class="empty-sub">Créez votre premier artiste</p><button class="empty-cta" onclick="newArtist()">Créer un artiste</button></div>`;return;}el.innerHTML=artists.map(ar=>{var h=ar.hue||hue(ar.name);return `<div class="artist-card"><div class="artist-avatar" style="background:${abg2(h)}" onclick="openArtistDetail('${ar.id}')">${ar.name.slice(0,2).toUpperCase()}</div><div class="artist-info" onclick="openArtistDetail('${ar.id}')"><p class="artist-name">${esc(ar.name)}</p><p class="artist-sub">${ar.trackIds.length} titre${ar.trackIds.length>1?'s':''} · ${ar.albumIds.length} album${ar.albumIds.length>1?'s':''}</p></div><div><button class="artist-btn" onclick="openArtistMenu(event,'${ar.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button></div></div>`;}).join('');}
 
-function openArtistDetail(id){currentArtist=artists.find(a=>a.id===id);if(!currentArtist) return;document.getElementById('artd-title').textContent=currentArtist.name;document.getElementById('artd-back').onclick=()=>{showScreen('artists',true);renderArtists();};renderArtistDetail();showScreen('artistdetail');}
-function renderArtistDetail(){var el=document.getElementById('artd-scroll');if(!currentArtist){el.innerHTML='';return;}var h=currentArtist.hue||hue(currentArtist.name);var artTracks=currentArtist.trackIds.map(id=>tracks.find(t=>t.id===id)).filter(Boolean);var artAlbums=currentArtist.albumIds.map(id=>albums.find(a=>a.id===id)).filter(Boolean);var albumsHtml=artAlbums.length?`<p class="artd-section">Albums</p><div class="albums-grid" style="padding:0 0 10px">`+artAlbums.map(alb=>{var colors=alb.trackIds.slice(0,4).map(id=>{var t=tracks.find(x=>x.id===id);return t?abg(t.hue||hue(t.name)):'#2a3548';});var aHtml=colors.length>=2?`<div class="album-art-grid">${colors.slice(0,4).map(c=>`<div style="background:${c}"></div>`).join('')}</div>`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${colors[0]||'#2a3548'}">${noteIco(36,'rgba(255,255,255,.4)')}</div>`;return `<div class="album-card" onclick="openAlbumDetail('${alb.id}')"><div class="album-art">${aHtml}</div><div class="album-info"><p class="album-name">${esc(alb.name)}</p></div></div>`;}).join('')+'</div>':'';var tracksHtml=artTracks.length?`<p class="artd-section">Titres</p><div class="song-list">`+artTracks.map(t=>{var ri=tracks.indexOf(t);return songRowHtml(t,ri,`rowClick(event,${ri})`,`openTrackMenu(event,'${t.id}')`,null);}).join('')+'</div>':'';el.innerHTML=`<div class="artd-hero"><div class="artd-avatar" style="background:${abg2(h)}">${currentArtist.name.slice(0,2).toUpperCase()}</div><p class="artd-name">${esc(currentArtist.name)}</p><p class="artd-sub">${artTracks.length} titre${artTracks.length>1?'s':''} · ${artAlbums.length} album${artAlbums.length>1?'s':''}</p></div>${albumsHtml}${tracksHtml}`+(!artTracks.length&&!artAlbums.length?'<p style="text-align:center;color:var(--sub);font-size:14px;padding:30px">Aucun contenu — appuyez sur ⋮ pour ajouter</p>':'');}
+function openArtistDetail(id){currentArtist=artists.find(a=>a.id===id);if(!currentArtist) return;document.getElementById('artd-title').textContent=currentArtist.name;document.getElementById('artd-back').onclick=()=>{showScreen('artists',true);renderArtists();};
+// Connecte l'input file de l'artiste
+var artdFile=document.getElementById('artd-filein');
+if(artdFile){artdFile.onchange=function(e){handleFilesForArtist(e.target.files,currentArtist.id);artdFile.value='';};}
+renderArtistDetail();showScreen('artistdetail');}
+
+// Menu "+" en haut de l'ecran artiste
+function showArtistImportMenu(){if(!currentArtist) return;showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">Ajouter des titres a ${esc(currentArtist.name)}</div><div class="sheet-item" onclick="closeModal();document.getElementById('artd-filein').click()"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--acc)"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg><div><p style="font-weight:700;color:var(--text)">Importer des nouveaux MP3</p><p style="font-size:12px;color:var(--sub);margin-top:2px">Ajoute des fichiers audio et les assigne directement a cet artiste</p></div></div><div class="sheet-item" onclick="closeModal();openTrackPicker('artist','${currentArtist.id}')"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg><div><p style="font-weight:700;color:var(--text)">Depuis les titres de Melo</p><p style="font-size:12px;color:var(--sub);margin-top:2px">Assigne des titres deja importes dans l'application</p></div></div></div>`);}
+
+// Import direct dans un artiste : les fichiers sont auto-assignes
+async function handleFilesForArtist(files, artistId){
+  var ar=artists.find(a=>a.id===artistId);
+  if(!ar) return;
+  var af=Array.from(files).filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|flac|aac|m4a|opus)$/i.test(f.name));
+  if(!af.length){notify('Aucun fichier audio detecte');return;}
+  notify('Import en cours...',60000);
+  var added=0;
+  for(var file of af){
+    try{
+      // Obtenir les credentials d'upload
+      var cr=await fetch(API+'?action=upload-creds');
+      var crj=await cr.json();
+      if(!crj.uploadUrl){notify('Erreur credentials');continue;}
+      // Lire le fichier
+      var buf=await file.arrayBuffer();
+      // SHA1
+      var hashBuf=await crypto.subtle.digest('SHA-1',buf);
+      var sha1=Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      // Upload vers B2
+      var fname=file.name.replace(/[^a-zA-Z0-9._\-]/g,'_');
+      await fetch(crj.uploadUrl,{method:'POST',headers:{'Authorization':crj.authorizationToken,'X-Bz-File-Name':encodeURIComponent(fname),'Content-Type':file.type||'audio/mpeg','Content-Length':buf.byteLength,'X-Bz-Content-Sha1':sha1},body:buf});
+      // Creer l'objet track avec l'artiste auto-assigne
+      var tname=file.name.replace(/\.[^.]+$/,'').replace(/_/g,' ');
+      var newTrack={id:genId(),name:tname,artist:ar.name,key:fname,hue:hue(tname),imgUrl:'',lrc:''};
+      tracks.push(newTrack);
+      // Assigner a l'artiste
+      if(!ar.trackIds.includes(newTrack.id)) ar.trackIds.push(newTrack.id);
+      added++;
+    }catch(e){console.error(e);notify('Erreur: '+file.name);}
+  }
+  if(added>0){
+    await saveMeta();
+    renderArtistDetail();
+    renderTracks();
+    notify(added+' titre'+(added>1?'s':'')+' importes pour '+ar.name+' ✓');
+  }
+}
+
+// Retirer un titre de l'artiste (sans le supprimer de l'app)
+function removeFromArtist(e,artId,tid){e.stopPropagation();var ar=artists.find(a=>a.id===artId);if(!ar) return;ar.trackIds=ar.trackIds.filter(x=>x!==tid);var t=tracks.find(x=>x.id===tid);if(t&&t.artist===ar.name) t.artist='Artiste inconnu';saveMeta();renderArtistDetail();notify('Retire de l\'artiste ✓');}
+
+
+function renderArtistDetail(){var el=document.getElementById('artd-scroll');if(!currentArtist){el.innerHTML='';return;}var h=currentArtist.hue||hue(currentArtist.name);var artTracks=currentArtist.trackIds.map(id=>tracks.find(t=>t.id===id)).filter(Boolean);var artAlbums=currentArtist.albumIds.map(id=>albums.find(a=>a.id===id)).filter(Boolean);
+var albumsHtml=artAlbums.length?`<p class="artd-section">Albums</p><div class="albums-grid" style="padding:0 0 10px">`+artAlbums.map(alb=>{var colors=alb.trackIds.slice(0,4).map(id=>{var t=tracks.find(x=>x.id===id);return t?abg(t.hue||hue(t.name)):'#2a3548';});var aHtml=colors.length>=2?`<div class="album-art-grid">${colors.slice(0,4).map(c=>`<div style="background:${c}"></div>`).join('')}</div>`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${colors[0]||'#2a3548'}">${noteIco(36,'rgba(255,255,255,.4)')}</div>`;return `<div class="album-card" onclick="openAlbumDetail('${alb.id}')"><div class="album-art">${aHtml}</div><div class="album-info"><p class="album-name">${esc(alb.name)}</p></div></div>`;}).join('')+'</div>':'';
+var tracksHtml=artTracks.length?`<p class="artd-section">Titres</p><div class="song-list">`+artTracks.map(t=>{var ri=tracks.indexOf(t);return songRowHtml(t,ri,`rowClick(event,${ri})`,`openTrackMenu(event,'${t.id}')`,`removeFromArtist(event,'${currentArtist.id}','${t.id}')`);}).join('')+'</div>':'';
+// Empty state avec boutons d'action
+var emptyHtml='';
+if(!artTracks.length&&!artAlbums.length){emptyHtml=`<div class="artd-empty"><p class="artd-empty-title">Aucun titre pour l'instant</p><p class="artd-empty-sub">Importe de nouveaux fichiers audio ou assigne des titres deja presents dans Melo.</p><div class="artd-empty-btns"><button class="artd-empty-btn" onclick="document.getElementById('artd-filein').click()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;vertical-align:middle"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>Importer des MP3</button><button class="artd-empty-btn secondary" onclick="openTrackPicker('artist','${currentArtist.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;vertical-align:middle"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Depuis Melo</button></div></div>`;}
+el.innerHTML=`<div class="artd-hero"><div class="artd-avatar" style="background:${abg2(h)}">${currentArtist.name.slice(0,2).toUpperCase()}</div><p class="artd-name">${esc(currentArtist.name)}</p><p class="artd-sub">${artTracks.length} titre${artTracks.length>1?'s':''} · ${artAlbums.length} album${artAlbums.length>1?'s':''}</p></div>${emptyHtml}${albumsHtml}${tracksHtml}`;}
 
 function editCurrentArtist(){if(!currentArtist) return;showModal(`<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">${esc(currentArtist.name)}</div><div class="sheet-item" onclick="closeModal();renameArtist('${currentArtist.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Renommer l'artiste</div><div class="sheet-item" onclick="closeModal();openTrackPicker('artist','${currentArtist.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Ajouter des titres</div><div class="sheet-item" onclick="closeModal();openAlbumPicker('${currentArtist.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>Ajouter des albums</div><div class="sheet-item red" onclick="closeModal();deleteArtist('${currentArtist.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Supprimer l'artiste</div></div>`);}
 
@@ -1299,3 +1410,5 @@ init();
 </script>
 </body>
 </html>
+
+
