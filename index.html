@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0D1421">
+  <meta name="apple-mobile-web-app-title" content="Melo">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Melo</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230D1421'/%3E%3Crect x='68' y='216' width='32' height='80' rx='16' fill='%234DCFBF' opacity='0.35'/%3E%3Crect x='116' y='180' width='32' height='152' rx='16' fill='%234DCFBF' opacity='0.55'/%3E%3Crect x='164' y='132' width='32' height='248' rx='16' fill='%234DCFBF' opacity='0.75'/%3E%3Crect x='212' y='176' width='32' height='160' rx='16' fill='%234DCFBF' opacity='0.6'/%3E%3Crect x='260' y='108' width='32' height='296' rx='16' fill='%23FF8A65'/%3E%3Crect x='308' y='176' width='32' height='160' rx='16' fill='%234DCFBF' opacity='0.6'/%3E%3Crect x='356' y='132' width='32' height='248' rx='16' fill='%234DCFBF' opacity='0.75'/%3E%3Crect x='404' y='180' width='32' height='152' rx='16' fill='%234DCFBF' opacity='0.55'/%3E%3Crect x='452' y='216' width='32' height='80' rx='16' fill='%234DCFBF' opacity='0.35'/%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230D1421'/%3E%3Crect x='68' y='216' width='32' height='80' rx='16' fill='%234DCFBF' opacity='0.35'/%3E%3Crect x='116' y='180' width='32' height='152' rx='16' fill='%234DCFBF' opacity='0.55'/%3E%3Crect x='164' y='132' width='32' height='248' rx='16' fill='%234DCFBF' opacity='0.75'/%3E%3Crect x='212' y='176' width='32' height='160' rx='16' fill='%234DCFBF' opacity='0.6'/%3E%3Crect x='260' y='108' width='32' height='296' rx='16' fill='%23FF8A65'/%3E%3Crect x='308' y='176' width='32' height='160' rx='16' fill='%234DCFBF' opacity='0.6'/%3E%3Crect x='356' y='132' width='32' height='248' rx='16' fill='%234DCFBF' opacity='0.75'/%3E%3Crect x='404' y='180' width='32' height='152' rx='16' fill='%234DCFBF' opacity='0.55'/%3E%3Crect x='452' y='216' width='32' height='80' rx='16' fill='%234DCFBF' opacity='0.35'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/png;base64,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">
   <style>
     :root{--bg:#0D1421;--card:#182030;--card2:#1F2A3E;--text:#E6EAF4;--sub:#7A8799;--border:rgba(255,255,255,.07);--acc:#4DCFBF;--acc-dim:rgba(77,207,191,.14);--orange:#FF8A65;--nav-bg:rgba(13,20,33,.92);--mini-bg:rgba(18,28,46,.96);--sh:0 8px 32px rgba(0,0,0,.35);--sh2:0 2px 12px rgba(0,0,0,.2);--nav-h:60px;--mini-h:66px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
     /* FIX 2: scroll bottom = nav + safe + mini-player + gap */
@@ -1020,12 +1023,14 @@ function setAlbumPhoto(albumId){
     reader.onload = async function(e){
       var alb = albums.find(a=>a.id===albumId);
       if(!alb) return;
-      alb.imgUrl = e.target.result;
+      // Upload la pochette vers B2 (pas de base64 dans le JSON)
+      var coverUrl = await uploadCoverToB2(e.target.result, 'album_'+albumId);
+      alb.imgUrl = coverUrl;
       // Appliquer automatiquement à toutes les chansons de l'album
       var count = 0;
       alb.trackIds.forEach(tid=>{
         var t = tracks.find(x=>x.id===tid);
-        if(t){ t.imgUrl = e.target.result; count++; }
+        if(t){ t.imgUrl = coverUrl; count++; }
       });
       await saveMeta();
       renderAlbumDetail();
@@ -1169,7 +1174,8 @@ async function handleFilesForArtist(files, artistId){
       // (l'artiste est forcé = ar.name car on importe dans cet artiste)
       var id3 = await readID3Tags(file);
       if(id3.title && id3.title.trim()) tname = id3.title.trim();
-      var coverImg = id3.cover || '';
+      // Upload la pochette vers B2 pour éviter le base64 dans les métadonnées
+      var coverImg = id3.cover ? await uploadCoverToB2(id3.cover, uid) : '';
       var newTrack={id:uid,key:key,name:tname,artist:ar.name,hue:hue(tname),imgUrl:coverImg,lrc:'',fileId:fileId||''};
       tracks.push(newTrack);
       if(!ar.trackIds.includes(uid)) ar.trackIds.push(uid);
@@ -1259,10 +1265,13 @@ async function saveTrackMetadata(trackId){
   var imgFile = document.getElementById('edit-imgfile').files[0];
   if(imgFile){
     var reader = new FileReader();
-    reader.onload = (e) => {
-      t.imgUrl = e.target.result;
-      saveMeta();
+    reader.onload = async (e) => {
+      // Upload la nouvelle pochette vers B2
+      t.imgUrl = await uploadCoverToB2(e.target.result, t.id);
+      await saveMeta();
       renderHome();
+      updateMiniPlayer();
+      updatePlayerScreen();
       closeModal();
       notify('Métadonnées mises à jour ✓');
     };
@@ -1271,6 +1280,8 @@ async function saveTrackMetadata(trackId){
     t.imgUrl = document.getElementById('edit-img').value || '';
     await saveMeta();
     renderHome();
+    updateMiniPlayer();
+    updatePlayerScreen();
     closeModal();
     notify('Métadonnées mises à jour ✓');
   }
@@ -1617,6 +1628,59 @@ async function readID3Tags(file){
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   UPLOAD POCHETTE → B2
+   La pochette est uploadée comme un vrai fichier image dans B2.
+   On stocke seulement l'URL publique dans imgUrl (pas le base64).
+   Cela évite que le JSON de métadonnées devienne énorme.
+   ═══════════════════════════════════════════════════════════ */
+async function uploadCoverToB2(base64DataUrl, trackId){
+  if(!base64DataUrl || !base64DataUrl.startsWith('data:')) return base64DataUrl;
+  try{
+    // Extraire le type MIME et les données binaires
+    var parts = base64DataUrl.split(',');
+    var mime = parts[0].split(':')[1].split(';')[0]; // ex: image/jpeg
+    var ext = mime === 'image/png' ? '.png' : mime === 'image/webp' ? '.webp' : '.jpg';
+    var binary = atob(parts[1]);
+    var bytes = new Uint8Array(binary.length);
+    for(var i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var buf = bytes.buffer;
+
+    // Clé du fichier image dans B2
+    var coverKey = 'covers/' + trackId + ext;
+
+    // Récupère les credentials d'upload
+    var cr = await fetch(API+'?action=upload-creds');
+    if(!cr.ok) throw new Error('creds failed');
+    var creds = await cr.json();
+
+    // Calcule SHA1
+    var hash = await crypto.subtle.digest('SHA-1', buf);
+    var sha1 = Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+
+    // Upload vers B2
+    var resp = await fetch(creds.uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': creds.authorizationToken,
+        'X-Bz-File-Name': encodeURIComponent(coverKey),
+        'Content-Type': mime,
+        'X-Bz-Content-Sha1': sha1,
+      },
+      body: buf
+    });
+    if(!resp.ok) throw new Error('B2 cover upload failed');
+    var result = await resp.json();
+
+    // Construit l'URL publique de la pochette
+    var coverUrl = rawUrl(coverKey);
+    return coverUrl;
+  } catch(e){
+    console.warn('Cover upload to B2 failed, keeping base64:', e.message);
+    return base64DataUrl; // fallback: garde le base64
+  }
+}
+
 function handleFiles(files){var af=Array.from(files).filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|flac|aac|m4a|opus)$/i.test(f.name));if(!af.length){notify('Aucun fichier audio détecté');return;}af.forEach(uploadFile);}
 
 async function uploadFile(file){
@@ -1659,8 +1723,10 @@ async function uploadFile(file){
     });
     item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(name)}</span><span class="updone">✓ Uploadé</span>`;
     item.querySelector('.upbg').style.display='none';
+    // Upload la pochette vers B2 si elle existe (évite de stocker du base64 dans le JSON)
+    var finalCoverUrl = cover ? await uploadCoverToB2(cover, id) : '';
     // Crée le track avec toutes les métadonnées lues automatiquement
-    var newTrack={id,key,name,artist,hue:hue(name),imgUrl:cover||'',fileId:fileId||''};
+    var newTrack={id,key,name,artist,hue:hue(name),imgUrl:finalCoverUrl,fileId:fileId||''};
     tracks.push(newTrack);
     // ── Gestion automatique de l'album depuis les tags ───────
     if(album){
