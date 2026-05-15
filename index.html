@@ -350,8 +350,6 @@
     .empty-sub{font-size:14px;color:var(--sub);}
     .empty-cta{background:var(--acc);border:none;border-radius:14px;padding:12px 26px;color:#fff;font-size:15px;font-weight:600;margin-top:4px;}
   </style>
-<!-- jsmediatags: lecture des tags ID3 (titre, artiste, album, pochette) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.7/jsmediatags.min.js"></script>
 </head>
 <body>
 
@@ -1512,32 +1510,111 @@ document.getElementById('filein').addEventListener('change',e=>handleFiles(e.tar
    Lit le titre, l'artiste, l'album et la pochette
    directement depuis le fichier MP3.
    ═══════════════════════════════════════════════ */
-function readID3Tags(file){
-  return new Promise(function(resolve){
-    if(typeof jsmediatags === 'undefined'){
-      resolve({title:null,artist:null,album:null,cover:null});
-      return;
+/* ═══════════════════════════════════════════════════════════
+   LECTEUR ID3 NATIF — zéro dépendance externe
+   Supporte ID3v2.3 et ID3v2.4 (utilisés par 99% des MP3)
+   Lit: TIT2=titre, TPE1=artiste, TALB=album, APIC=pochette
+   ═══════════════════════════════════════════════════════════ */
+async function readID3Tags(file){
+  var EMPTY = {title:null, artist:null, album:null, cover:null};
+  try{
+    // On lit seulement les 512 Ko du début — les tags ID3 sont toujours au début
+    var slice = file.slice(0, 524288);
+    var buf   = await slice.arrayBuffer();
+    var data  = new Uint8Array(buf);
+
+    // Vérifie la signature ID3 : "ID3" en ASCII
+    if(data[0]!==0x49||data[1]!==0x44||data[2]!==0x33) return EMPTY;
+
+    var version = data[3]; // 3 = ID3v2.3, 4 = ID3v2.4
+    if(version < 2 || version > 4) return EMPTY;
+
+    // Taille totale du header ID3 (syncsafe integer sur 4 octets)
+    var tagSize = ((data[6]&0x7F)<<21)|((data[7]&0x7F)<<14)|((data[8]&0x7F)<<7)|(data[9]&0x7F);
+    var pos = 10;
+    // Saute le header étendu si présent (flag bit 6)
+    if(data[5] & 0x40){
+      var extSize = (data[10]<<24)|(data[11]<<16)|(data[12]<<8)|data[13];
+      pos += extSize;
     }
-    jsmediatags.read(file, {
-      onSuccess: function(tag){
-        var tags = tag.tags || {};
-        var title = tags.title || null;
-        var artist = tags.artist || null;
-        var album = tags.album || null;
-        var cover = null;
-        // Pochette d'album intégrée dans les tags ID3
-        if(tags.picture){
-          var pic = tags.picture;
-          var bytes = new Uint8Array(pic.data);
-          var binary = '';
-          for(var i=0;i<bytes.byteLength;i++) binary += String.fromCharCode(bytes[i]);
-          cover = 'data:'+pic.format+';base64,'+btoa(binary);
+
+    var result = {title:null, artist:null, album:null, cover:null};
+    var decoder = new TextDecoder('utf-8');
+
+    function readFrameSize(p){
+      if(version <= 3) return (data[p]<<24)|(data[p+1]<<16)|(data[p+2]<<8)|data[p+3];
+      // ID3v2.4: syncsafe
+      return ((data[p]&0x7F)<<21)|((data[p+1]&0x7F)<<14)|((data[p+2]&0x7F)<<7)|(data[p+3]&0x7F);
+    }
+
+    function decodeText(bytes){
+      if(!bytes || !bytes.length) return null;
+      var enc = bytes[0]; // 0=Latin1, 1=UTF16 BOM, 2=UTF16BE, 3=UTF8
+      var content = bytes.slice(1);
+      // Retire les null terminators
+      while(content.length && content[content.length-1]===0) content = content.slice(0,-1);
+      try{
+        if(enc === 0) return new TextDecoder('iso-8859-1').decode(content);
+        if(enc === 1){
+          // UTF-16 with BOM
+          if(content[0]===0xFF && content[1]===0xFE) return new TextDecoder('utf-16le').decode(content.slice(2));
+          if(content[0]===0xFE && content[1]===0xFF) return new TextDecoder('utf-16be').decode(content.slice(2));
+          return new TextDecoder('utf-16le').decode(content);
         }
-        resolve({title:title, artist:artist, album:album, cover:cover});
-      },
-      onError: function(){ resolve({title:null,artist:null,album:null,cover:null}); }
-    });
-  });
+        if(enc === 2) return new TextDecoder('utf-16be').decode(content);
+        return new TextDecoder('utf-8').decode(content);
+      }catch(e){ return new TextDecoder('iso-8859-1').decode(content); }
+    }
+
+    var end = Math.min(10 + tagSize, data.length);
+    while(pos + 10 < end){
+      var frameId = String.fromCharCode(data[pos],data[pos+1],data[pos+2],data[pos+3]);
+      var frameSize = readFrameSize(pos+4);
+      pos += 10; // Saute header (4 id + 4 size + 2 flags)
+      if(frameSize <= 0 || frameSize > 500000 || pos + frameSize > data.length) break;
+      var frameData = data.slice(pos, pos + frameSize);
+
+      if(frameId === 'TIT2' && !result.title){
+        result.title = decodeText(frameData);
+      } else if(frameId === 'TPE1' && !result.artist){
+        result.artist = decodeText(frameData);
+      } else if(frameId === 'TALB' && !result.album){
+        result.album = decodeText(frameData);
+      } else if(frameId === 'APIC' && !result.cover){
+        // APIC: [encoding(1)] [mime ] [picture_type(1)] [description ] [image_data]
+        try{
+          var enc2 = frameData[0];
+          var mimeEnd = 1;
+          while(mimeEnd < frameData.length && frameData[mimeEnd] !== 0) mimeEnd++;
+          var mime = new TextDecoder('ascii').decode(frameData.slice(1, mimeEnd));
+          if(!mime || mime==='image') mime = 'image/jpeg';
+          // Saute le type (1 octet) et la description (jusqu'au prochain null)
+          var descStart = mimeEnd + 2;
+          var nullSize = (enc2 === 1 || enc2 === 2) ? 2 : 1;
+          while(descStart + nullSize <= frameData.length){
+            if(nullSize===2){if(frameData[descStart]===0&&frameData[descStart+1]===0){descStart+=2;break;}}
+            else{if(frameData[descStart]===0){descStart++;break;}}
+            descStart++;
+          }
+          var imgBytes = frameData.slice(descStart);
+          if(imgBytes.length > 100){
+            // Convertit en base64 par morceaux pour éviter stack overflow
+            var binary = '';
+            var chunk = 8192;
+            for(var i=0;i<imgBytes.length;i+=chunk){
+              binary += String.fromCharCode.apply(null, imgBytes.slice(i, i+chunk));
+            }
+            result.cover = 'data:'+mime+';base64,'+btoa(binary);
+          }
+        }catch(e){}
+      }
+      pos += frameSize;
+    }
+    return result;
+  } catch(e){
+    console.warn('ID3 read error:', e);
+    return {title:null, artist:null, album:null, cover:null};
+  }
 }
 
 function handleFiles(files){var af=Array.from(files).filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|flac|aac|m4a|opus)$/i.test(f.name));if(!af.length){notify('Aucun fichier audio détecté');return;}af.forEach(uploadFile);}
