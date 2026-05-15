@@ -350,6 +350,8 @@
     .empty-sub{font-size:14px;color:var(--sub);}
     .empty-cta{background:var(--acc);border:none;border-radius:14px;padding:12px 26px;color:#fff;font-size:15px;font-weight:600;margin-top:4px;}
   </style>
+<!-- jsmediatags: lecture des tags ID3 (titre, artiste, album, pochette) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.7/jsmediatags.min.js"></script>
 </head>
 <body>
 
@@ -431,6 +433,10 @@
   <div style="padding:calc(var(--safe-t)+18px) 20px 4px;display:flex;align-items:center;justify-content:space-between;">
     <span class="home-title">Artistes</span>
     <button class="head-btn" onclick="newArtist()"><svg width="17" height="17" viewBox="0 0 24 24" fill="var(--text)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+  </div>
+  <div class="search-wrap" style="padding:4px 18px 8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--sub)" style="position:absolute;left:30px;pointer-events:none;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input class="search-input" id="artist-search" placeholder="Rechercher un artiste..." oninput="renderArtists()">
   </div>
   <div class="artists-scroll" id="artists-list"></div>
 </div>
@@ -1075,7 +1081,7 @@ function playAlbum(id){var alb=albums.find(a=>a.id===id);if(!alb||!alb.trackIds.
 function playFromAlbum(albId,tid){var alb=albums.find(a=>a.id===albId);if(!alb) return;queueIds=alb.trackIds;var idx=tracks.findIndex(t=>t.id===tid);if(idx>-1) playAt(idx);}
 
 /* ARTISTS */
-function renderArtists(){var el=document.getElementById('artists-list');if(!artists.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div><p class="empty-title">Aucun artiste</p><p class="empty-sub">Créez votre premier artiste</p><button class="empty-cta" onclick="newArtist()">Créer un artiste</button></div>`;return;}el.innerHTML=artists.map(ar=>{var h=ar.hue||hue(ar.name);return `<div class="artist-card"><div class="artist-avatar" style="background:${abg2(h)}" onclick="openArtistDetail('${ar.id}')">${ar.name.slice(0,2).toUpperCase()}</div><div class="artist-info" onclick="openArtistDetail('${ar.id}')"><p class="artist-name">${esc(ar.name)}</p><p class="artist-sub">${ar.trackIds.length} titre${ar.trackIds.length>1?'s':''} · ${ar.albumIds.length} album${ar.albumIds.length>1?'s':''}</p></div><div><button class="artist-btn" onclick="openArtistMenu(event,'${ar.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button></div></div>`;}).join('');}
+function renderArtists(){var el=document.getElementById('artists-list');var q=(document.getElementById('artist-search')?document.getElementById('artist-search').value:'').toLowerCase().trim();if(!artists.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div><p class="empty-title">Aucun artiste</p><p class="empty-sub">Créez votre premier artiste</p><button class="empty-cta" onclick="newArtist()">Créer un artiste</button></div>`;return;}var list=q?artists.filter(ar=>ar.name.toLowerCase().includes(q)):artists;if(!list.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div><p class="empty-title">Aucun résultat</p><p class="empty-sub">Aucun artiste trouvé</p></div>`;return;}el.innerHTML=list.map(ar=>{var h=ar.hue||hue(ar.name);return `<div class="artist-card"><div class="artist-avatar" style="background:${abg2(h)}" onclick="openArtistDetail('${ar.id}')">${ar.name.slice(0,2).toUpperCase()}</div><div class="artist-info" onclick="openArtistDetail('${ar.id}')"><p class="artist-name">${esc(ar.name)}</p><p class="artist-sub">${ar.trackIds.length} titre${ar.trackIds.length>1?'s':''} · ${ar.albumIds.length} album${ar.albumIds.length>1?'s':''}</p></div><div><button class="artist-btn" onclick="openArtistMenu(event,'${ar.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--sub)"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button></div></div>`;}).join('');}
 
 function openArtistDetail(id){currentArtist=artists.find(a=>a.id===id);if(!currentArtist) return;document.getElementById('artd-title').textContent=currentArtist.name;document.getElementById('artd-back').onclick=()=>{showScreen('artists',true);renderArtists();};
 // Connecte l'input file de l'artiste
@@ -1161,7 +1167,12 @@ async function handleFilesForArtist(files, artistId){
       item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(tname)}</span><span class="updone">✓ OK</span>`;
       item.querySelector('.upbg').style.display='none';
 
-      var newTrack={id:uid,key:key,name:tname,artist:ar.name,hue:hue(tname),imgUrl:'',lrc:'',fileId:fileId||''};
+      // Lit les tags ID3 pour avoir le titre et la pochette
+      // (l'artiste est forcé = ar.name car on importe dans cet artiste)
+      var id3 = await readID3Tags(file);
+      if(id3.title && id3.title.trim()) tname = id3.title.trim();
+      var coverImg = id3.cover || '';
+      var newTrack={id:uid,key:key,name:tname,artist:ar.name,hue:hue(tname),imgUrl:coverImg,lrc:'',fileId:fileId||''};
       tracks.push(newTrack);
       if(!ar.trackIds.includes(uid)) ar.trackIds.push(uid);
       added++;
@@ -1496,13 +1507,122 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');}
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files);});
 document.getElementById('filein').addEventListener('change',e=>handleFiles(e.target.files));
+/* ═══════════════════════════════════════════════
+   LECTURE AUTOMATIQUE DES TAGS ID3 (MP3 metadata)
+   Lit le titre, l'artiste, l'album et la pochette
+   directement depuis le fichier MP3.
+   ═══════════════════════════════════════════════ */
+function readID3Tags(file){
+  return new Promise(function(resolve){
+    if(typeof jsmediatags === 'undefined'){
+      resolve({title:null,artist:null,album:null,cover:null});
+      return;
+    }
+    jsmediatags.read(file, {
+      onSuccess: function(tag){
+        var tags = tag.tags || {};
+        var title = tags.title || null;
+        var artist = tags.artist || null;
+        var album = tags.album || null;
+        var cover = null;
+        // Pochette d'album intégrée dans les tags ID3
+        if(tags.picture){
+          var pic = tags.picture;
+          var bytes = new Uint8Array(pic.data);
+          var binary = '';
+          for(var i=0;i<bytes.byteLength;i++) binary += String.fromCharCode(bytes[i]);
+          cover = 'data:'+pic.format+';base64,'+btoa(binary);
+        }
+        resolve({title:title, artist:artist, album:album, cover:cover});
+      },
+      onError: function(){ resolve({title:null,artist:null,album:null,cover:null}); }
+    });
+  });
+}
+
 function handleFiles(files){var af=Array.from(files).filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|flac|aac|m4a|opus)$/i.test(f.name));if(!af.length){notify('Aucun fichier audio détecté');return;}af.forEach(uploadFile);}
 
-async function uploadFile(file){var id=genId(),ext=(file.name.match(/\.[^.]+$/)||['.mp3'])[0].toLowerCase();var key='tracks/'+id+ext,name=file.name.replace(/\.[^.]+$/,'').replace(/[_\-]+/g,' ').trim();var ul=document.getElementById('uplist'),item=document.createElement('div');item.className='upitem';item.innerHTML=`<div class="uphd"><span class="upname">${esc(name)}</span><span class="uppct" id="pct-${id}">0%</span></div><div class="upbg"><div class="upfill" id="bar-${id}" style="width:0%"></div></div>`;ul.prepend(item);var setP=p=>{var pe=document.getElementById('pct-'+id),be=document.getElementById('bar-'+id);if(pe)pe.textContent=p+'%';if(be)be.style.width=p+'%';};
-try{var cr=await fetch(API+'?action=upload-creds');if(!cr.ok) throw new Error('Credentials indisponibles');var creds=await cr.json();var buf=await file.arrayBuffer();var hash=await crypto.subtle.digest('SHA-1',buf);var sha1=Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-var fileId=await new Promise((resolve,reject)=>{var xhr=new XMLHttpRequest();xhr.open('POST',creds.uploadUrl);xhr.setRequestHeader('Authorization',creds.authorizationToken);xhr.setRequestHeader('X-Bz-File-Name',encodeURIComponent(key));xhr.setRequestHeader('Content-Type',file.type||'audio/mpeg');xhr.setRequestHeader('X-Bz-Content-Sha1',sha1);xhr.upload.onprogress=e=>{if(e.lengthComputable)setP(Math.round(e.loaded/e.total*100));};xhr.onload=()=>{try{var r=JSON.parse(xhr.responseText);if(xhr.status>=200&&xhr.status<300)resolve(r.fileId);else reject(new Error('B2 '+xhr.status+': '+(r.message||'')));}catch(e){reject(new Error('Réponse invalide'));}};xhr.onerror=()=>reject(new Error('Erreur réseau'));xhr.send(new Blob([buf]));});
-item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(name)}</span><span class="updone">✓ Uploadé</span>`;item.querySelector('.upbg').style.display='none';tracks.push({id,key,name,artist:'Artiste inconnu',hue:hue(name),fileId});await saveMeta();renderHome();notify('✓ '+name+' ajouté');}
-catch(err){item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(name)}</span><span class="uperr">✗ ${esc(err.message)}</span>`;item.querySelector('.upbg').style.display='none';notify('Erreur: '+err.message.slice(0,50));}}
+async function uploadFile(file){
+  var id=genId(),ext=(file.name.match(/\.[^.]+$/)||['.mp3'])[0].toLowerCase();
+  var key='tracks/'+id+ext;
+  // Nom de fallback = nom du fichier sans extension
+  var fallbackName=file.name.replace(/\.[^.]+$/,'').replace(/[_\-]+/g,' ').trim();
+
+  // ── Lecture des tags ID3 AVANT l'upload ──────────────────
+  var tags = await readID3Tags(file);
+  var name   = (tags.title  && tags.title.trim())  ? tags.title.trim()   : fallbackName;
+  var artist = (tags.artist && tags.artist.trim())  ? tags.artist.trim()  : 'Artiste inconnu';
+  var album  = (tags.album  && tags.album.trim())   ? tags.album.trim()   : null;
+  var cover  = tags.cover || null;  // Data URL base64 de la pochette
+  // ─────────────────────────────────────────────────────────
+
+  var ul=document.getElementById('uplist'),item=document.createElement('div');
+  item.className='upitem';
+  item.innerHTML=`<div class="uphd"><span class="upname">${esc(name)}</span><span class="uppct" id="pct-${id}">0%</span></div><div class="upbg"><div class="upfill" id="bar-${id}" style="width:0%"></div></div>`;
+  ul.prepend(item);
+  var setP=p=>{var pe=document.getElementById('pct-'+id),be=document.getElementById('bar-'+id);if(pe)pe.textContent=p+'%';if(be)be.style.width=p+'%';};
+  try{
+    var cr=await fetch(API+'?action=upload-creds');
+    if(!cr.ok) throw new Error('Credentials indisponibles');
+    var creds=await cr.json();
+    var buf=await file.arrayBuffer();
+    var hash=await crypto.subtle.digest('SHA-1',buf);
+    var sha1=Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    var fileId=await new Promise((resolve,reject)=>{
+      var xhr=new XMLHttpRequest();
+      xhr.open('POST',creds.uploadUrl);
+      xhr.setRequestHeader('Authorization',creds.authorizationToken);
+      xhr.setRequestHeader('X-Bz-File-Name',encodeURIComponent(key));
+      xhr.setRequestHeader('Content-Type',file.type||'audio/mpeg');
+      xhr.setRequestHeader('X-Bz-Content-Sha1',sha1);
+      xhr.upload.onprogress=e=>{if(e.lengthComputable)setP(Math.round(e.loaded/e.total*100));};
+      xhr.onload=()=>{try{var r=JSON.parse(xhr.responseText);if(xhr.status>=200&&xhr.status<300)resolve(r.fileId);else reject(new Error('B2 '+xhr.status+': '+(r.message||'')));}catch(e){reject(new Error('Réponse invalide'));}};
+      xhr.onerror=()=>reject(new Error('Erreur réseau'));
+      xhr.send(new Blob([buf]));
+    });
+    item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(name)}</span><span class="updone">✓ Uploadé</span>`;
+    item.querySelector('.upbg').style.display='none';
+    // Crée le track avec toutes les métadonnées lues automatiquement
+    var newTrack={id,key,name,artist,hue:hue(name),imgUrl:cover||'',fileId:fileId||''};
+    tracks.push(newTrack);
+    // ── Gestion automatique de l'album depuis les tags ───────
+    if(album){
+      var existingAlbum=albums.find(a=>a.name.toLowerCase()===album.toLowerCase());
+      if(existingAlbum){
+        if(!existingAlbum.trackIds.includes(id)) existingAlbum.trackIds.push(id);
+        // Applique la pochette à l'album si pas encore définie
+        if(!existingAlbum.imgUrl && cover) existingAlbum.imgUrl=cover;
+      } else {
+        albums.push({id:genId(),name:album,trackIds:[id],imgUrl:cover||''});
+      }
+    }
+    // ── Gestion automatique de l'artiste depuis les tags ─────
+    if(artist && artist!=='Artiste inconnu'){
+      var existingArtist=artists.find(a=>a.name.toLowerCase()===artist.toLowerCase());
+      if(existingArtist){
+        if(!existingArtist.trackIds.includes(id)) existingArtist.trackIds.push(id);
+        // Lie l'album à l'artiste
+        if(album){
+          var linkedAlbum=albums.find(a=>a.name.toLowerCase()===album.toLowerCase());
+          if(linkedAlbum && !existingArtist.albumIds.includes(linkedAlbum.id)){
+            existingArtist.albumIds.push(linkedAlbum.id);
+          }
+        }
+      } else {
+        var newAlbumId=album?(albums.find(a=>a.name.toLowerCase()===album.toLowerCase())||{}).id:null;
+        artists.push({id:genId(),name:artist,hue:hue(artist),trackIds:[id],albumIds:newAlbumId?[newAlbumId]:[]});
+      }
+    }
+    await saveMeta();
+    renderHome();
+    var infoMsg='✓ '+name+(artist!=='Artiste inconnu'?' — '+artist:'')+(album?' ['+album+']':'');
+    notify(infoMsg);
+  } catch(err){
+    item.querySelector('.uphd').innerHTML=`<span class="upname">${esc(name)}</span><span class="uperr">✗ ${esc(err.message)}</span>`;
+    item.querySelector('.upbg').style.display='none';
+    notify('Erreur: '+err.message.slice(0,50));
+  }
+}
 
 async function deleteTrack(id){var t=tracks.find(x=>x.id===id);if(!t) return;var ti=tracks.indexOf(t);try{await fetch(API+'?action=delete&key='+encodeURIComponent(t.key)+'&fileId='+encodeURIComponent(t.fileId||''));}catch(_){}await deleteCachedTrack(id);tracks=tracks.filter(x=>x.id!==id);playlists.forEach(pl=>{pl.trackIds=pl.trackIds.filter(x=>x!==id);});albums.forEach(alb=>{alb.trackIds=alb.trackIds.filter(x=>x!==id);});artists.forEach(ar=>{ar.trackIds=ar.trackIds.filter(x=>x!==id);});await saveMeta();if(cur===ti){cur=null;isPlaying=false;aud.pause();aud.src='';updateMiniPlayer();}else if(cur!==null&&ti<cur) cur--;renderHome();notify('Supprimé ✓');}
 
