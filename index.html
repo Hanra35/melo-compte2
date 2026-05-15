@@ -339,7 +339,7 @@
     .d-btn.cancel{background:var(--card2);color:var(--sub);}
     .d-btn.confirm{background:var(--acc);color:#fff;}
 
-    #loading{display:none;}
+    #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:300;}
     .spin{width:28px;height:28px;border:2.5px solid var(--card2);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg)}}
     #notif{position:fixed;bottom:calc(var(--nav-h) + var(--mini-h) + 24px);left:50%;transform:translateX(-50%);background:var(--card);border-radius:12px;padding:9px 18px;font-size:13px;font-weight:500;color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:250;box-shadow:var(--sh);border:1px solid var(--border);}
@@ -370,7 +370,13 @@
   </div>
 </div>
 
-
+<div id="loading">
+  <div style="width:54px;height:54px;background:var(--acc);border-radius:16px;display:flex;align-items:center;justify-content:center;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+  </div>
+  <div class="spin"></div>
+  <p id="ldmsg" style="font-size:14px;color:var(--sub);">Chargement...</p>
+</div>
 
 <!-- HOME -->
 <div id="s-home" class="screen">
@@ -1554,7 +1560,7 @@ async function init(){
   }
   await initCache();
   updateStorageDisplay();
-  
+  document.getElementById('loading').style.display='none';
   renderHome();
   // Lance la synchronisation automatique toutes les 20 secondes
   startAutoSync();
@@ -1613,3 +1619,4 @@ init();
 </script>
 </body>
 </html>
+
