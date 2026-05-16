@@ -80,12 +80,12 @@
     .sec-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 10px;}
     .sec-title{font-size:17px;font-weight:700;}
     .sec-link{font-size:13px;color:var(--acc);font-weight:500;}
-    .cards-row{display:flex;padding:0 18px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
-    .pl-card{flex-shrink:0;width:122px;cursor:pointer;margin-right:13px;}
+    .cards-row{display:flex;padding:0 18px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;}.cards-row::-webkit-scrollbar{display:none;}
+    .pl-card{flex-shrink:0;width:122px;cursor:pointer;margin-right:13px;scroll-snap-align:start;}
     .pl-card:last-child{margin-right:0;}
     .pl-card-art{width:122px;height:122px;border-radius:16px;overflow:hidden;margin-bottom:8px;box-shadow:var(--sh);position:relative;}
     .pl-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%;height:100%;}
-    .pl-card-grid div{width:100%;height:100%;}
+    .pl-card-grid div{width:100%;height:100%;background-size:cover;background-position:center;}
     .pl-card-solo{width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
     .pl-card-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
     .pl-card-sub{font-size:11px;color:var(--sub);margin-top:2px;}
@@ -405,7 +405,7 @@
         <div class="sec-head"><span class="sec-title">Mes playlists</span><span class="sec-link" onclick="gotoNav('playlists')" style="cursor:pointer">Tout voir</span></div>
         <div class="cards-row" id="cards-row"></div>
       </div>
-      <div class="sec-head"><span class="sec-title">Récents</span><span class="sec-link" id="lib-count-lbl" style="color:var(--sub)"></span></div>
+      <div class="sec-head"><span class="sec-title">Récents</span><div style="display:flex;align-items:center;gap:10px;"><button onclick="playRandom()" style="display:flex;align-items:center;gap:5px;background:var(--acc);border:none;border-radius:20px;padding:5px 12px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 8.46 20 10.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>Aléatoire</button><span class="sec-link" id="lib-count-lbl" style="color:var(--sub)"></span></div></div>
       <div class="song-list" id="song-list-overview"></div>
     </div>
     <div class="tab-section" id="ts-tracks">
@@ -860,6 +860,28 @@ var isDark=true;
 function hideSplash(){var sp=document.getElementById('splash');if(sp){sp.classList.add('hidden');setTimeout(function(){if(sp&&sp.parentNode)sp.parentNode.removeChild(sp);},600);}}
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle('light',!isDark);var i=document.getElementById('theme-ico');if(isDark){i.innerHTML='<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';}else{i.setAttribute('stroke','var(--sub)');i.setAttribute('fill','none');i.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';}renderHome();}
 
+/* LECTURE ALÉATOIRE — mélange toute la bibliothèque et lance */
+function playRandom(){
+  if(!tracks.length){notify('Aucune chanson dans la bibliothèque');return;}
+  // Crée une copie mélangée des indices
+  var indices=tracks.map((_,i)=>i);
+  for(var i=indices.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    [indices[i],indices[j]]=[indices[j],indices[i]];
+  }
+  // Met la queue en mode shuffle avec tous les tracks
+  queue=indices;
+  cur=queue[0];
+  queuePos=0;
+  shuffleOn=true;
+  // Met à jour le bouton shuffle visuellement
+  var sb=document.getElementById('btn-shuffle');
+  if(sb) sb.style.opacity='1';
+  playCur();
+  openPlayer();
+  notify('🔀 Lecture aléatoire lancée ('+tracks.length+' titres)');
+}
+
 /* HOME TABS */
 function switchHomeTab(tab){activeHomeTab=tab;['overview','tracks','albums'].forEach(t=>{document.getElementById('tab-'+(t==='overview'?'overview':t==='tracks'?'tracks':'albums')).classList.toggle('active',t===tab);document.getElementById('ts-'+t).classList.toggle('active',t===tab);});if(tab==='tracks') renderTracks();if(tab==='albums') renderAlbumsGrid();}
 
@@ -1005,7 +1027,19 @@ function renderHome(){
     </div>`;
   }
   var ps=document.getElementById('playlists-section'),cr=document.getElementById('cards-row');
-  if(playlists.length){ps.style.display='';cr.innerHTML=playlists.slice(0,8).map(pl=>{var colors=pl.trackIds.slice(0,4).map(id=>{var t=tracks.find(x=>x.id===id);return t?abg(t.hue||hue(t.name)):'#2a3548';});var artHtml=colors.length>=2?`<div class="pl-card-grid">${colors.slice(0,4).map(c=>`<div style="background:${c}"></div>`).join('')}</div>`:`<div class="pl-card-solo">${noteIco(36,'rgba(255,255,255,.3)')}</div>`;return `<div class="pl-card" onclick="openPlDetail('${pl.id}')"><div class="pl-card-art" style="background:${colors[0]||'#2a3548'}">${artHtml}</div><p class="pl-card-name">${esc(pl.name)}</p><p class="pl-card-sub">${pl.trackIds.length} titre${pl.trackIds.length>1?'s':''}</p></div>`;}).join('')+`<div class="pl-new-card" onclick="newPlaylist()"><div class="pl-new-art"><svg width="28" height="28" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div><p class="pl-card-name" style="color:var(--sub);text-align:center">Nouvelle</p></div>`;}
+  if(playlists.length){ps.style.display='';cr.innerHTML=playlists.slice(0,20).map(pl=>{
+    // Prend jusqu'à 4 chansons AU HASARD dans la playlist pour les pochettes
+    var allIds=[...pl.trackIds];
+    // Mélange les IDs pour en prendre 4 différents à chaque fois
+    for(var si=allIds.length-1;si>0;si--){var sj=Math.floor(Math.random()*(si+1));[allIds[si],allIds[sj]]=[allIds[sj],allIds[si]];}
+    var pick4=allIds.slice(0,4);
+    var cells=pick4.map(id=>{var t=tracks.find(x=>x.id===id);if(t&&t.imgUrl){return `<div style="background-image:url('${t.imgUrl}');background-size:cover;background-position:center;"></div>`;}else{var c=t?abg(t.hue||hue(t.name)):'#2a3548';return `<div style="background:${c}"></div>`;}});
+    // Complète avec des couleurs si moins de 4 chansons
+    while(cells.length<4){cells.push(`<div style="background:#1e2a3a"></div>`);}
+    var artHtml=pl.trackIds.length>=2?`<div class="pl-card-grid">${cells.join('')}</div>`:`<div class="pl-card-solo">${noteIco(36,'rgba(255,255,255,.3)')}</div>`;
+    var firstTrack=tracks.find(x=>x.id===pl.trackIds[0]);
+    var bgFallback=firstTrack?abg(firstTrack.hue||hue(firstTrack.name)):'#2a3548';
+    return `<div class="pl-card" onclick="openPlDetail('${pl.id}')"><div class="pl-card-art" style="background:${bgFallback}">${artHtml}</div><p class="pl-card-name">${esc(pl.name)}</p><p class="pl-card-sub">${pl.trackIds.length} titre${pl.trackIds.length>1?'s':''}</p></div>`;}).join('')+`<div class="pl-new-card" onclick="newPlaylist()"><div class="pl-new-art"><svg width="28" height="28" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div><p class="pl-card-name" style="color:var(--sub);text-align:center">Nouvelle</p></div>`;}
   else ps.style.display='none';
   var sl=document.getElementById('song-list-overview'),lc=document.getElementById('lib-count-lbl');
   if(!tracks.length){lc.textContent='';sl.innerHTML=`<div class="empty-state"><div class="empty-icon">${noteIco(34,'var(--sub)')}</div><p class="empty-title">Bibliothèque vide</p><p class="empty-sub">Ajoutez vos fichiers audio</p><button class="empty-cta" onclick="gotoNav('import')">Importer</button></div>`;}
