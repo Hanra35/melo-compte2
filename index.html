@@ -893,7 +893,25 @@ function gotoNav(name){
 /* CACHE DISABLED - STREAMING ONLY */
 var rawUrl=key=>dlUrl+'/file/'+BUCKET+'/'+encodeURIComponent(key)+'?Authorization='+encodeURIComponent(dlToken);
 
-async function saveMeta(){try{var ts=Date.now();await fetch(API+'?action=save-meta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tracks,playlists,albums,artists,lastModified:ts})});window._localLastMod=ts;try{localStorage.setItem('melo-meta',JSON.stringify({tracks,playlists,albums,artists,lastModified:ts}));}catch(_){}}catch(e){console.error(e);}}
+async function saveMeta(){
+  var ts=Date.now();
+  var payload=JSON.stringify({tracks,playlists,albums,artists,lastModified:ts});
+  // Sauvegarde locale immédiate (fallback si API échoue)
+  try{localStorage.setItem('melo-meta',JSON.stringify({tracks,playlists,albums,artists,lastModified:ts}));}catch(_){}
+  // Envoi vers B2 via l'API
+  try{
+    var r=await fetch(API+'?action=save-meta',{method:'POST',headers:{'Content-Type':'application/json'},body:payload});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var d=await r.json();
+    if(!d.ok) throw new Error('save-meta returned not ok');
+    window._localLastMod=ts;
+  }catch(e){
+    console.error('saveMeta failed:',e.message);
+    // Affiche une erreur visible si la sauvegarde B2 échoue
+    notify('⚠️ Erreur de sauvegarde: '+e.message.slice(0,60));
+    throw e; // Propage pour que uploadFile puisse l'attraper
+  }
+}
 
 /* SONG ROW */
 function songRowHtml(t,i,clickFn,menuFn,removeFn){var h=t.hue||hue(t.name),isCur=i===cur;var eqHtml='<div class="eq on"><span style="height:6px"></span><span style="height:13px"></span><span style="height:9px"></span></div>';var artStyle,artInner;if(t.imgUrl){artStyle='background-image:url(\''+t.imgUrl+'\');background-size:cover;background-position:center;';artInner=isCur&&isPlaying?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);border-radius:13px">'+eqHtml+'</div>':'';}else{artStyle='background:'+abg(h)+';';artInner=isCur&&isPlaying?eqHtml:noteIco(20,'rgba(255,255,255,.8)');}var btn=removeFn?`<button class="song-menu" onclick="${removeFn}"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--sub)"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`:`<button class="song-menu" onclick="${menuFn}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>`;return `<div class="song-row${isCur?' active':''}" onclick="${clickFn}"><div class="song-art" style="${artStyle}position:relative;">${artInner}</div><div class="song-info"><p class="song-name">${esc(t.name)}</p><p class="song-artist">${esc(t.artist)}</p></div>${btn}</div>`;}
