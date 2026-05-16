@@ -1543,14 +1543,27 @@ function setupMediaSession(){
   var t = cur !== null ? tracks[cur] : null;
   if(!t) return;
 
+  // 1. On récupère l'URL absolue HTTPS de l'image (via B2)
+  // 2. Si aucune image, on utilise le logo de ton app en fallback (iOS bloquera le SVG en base64)
+  var finalImgUrl = resolveImgUrl(t.imgUrl);
+  if (!finalImgUrl) {
+    // Utilise une URL absolue vers ton logo existant
+    finalImgUrl = window.location.origin + '/logo.png'; 
+  }
+
   // Métadonnées affichées sur l'écran de verrouillage
   navigator.mediaSession.metadata = new MediaMetadata({
     title: t.name,
     artist: t.artist || 'Artiste inconnu',
     album: 'Melo',
     artwork: [
-      // Utilise une image de couverture si disponible, sinon une couleur SVG
-      { src: t.imgUrl || generateArtworkDataUrl(t), sizes: '512x512', type: 'image/png' }
+      // iOS recommande fortement de fournir plusieurs tailles
+      { src: finalImgUrl, sizes: '96x96', type: 'image/png' },
+      { src: finalImgUrl, sizes: '128x128', type: 'image/png' },
+      { src: finalImgUrl, sizes: '192x192', type: 'image/png' },
+      { src: finalImgUrl, sizes: '256x256', type: 'image/png' },
+      { src: finalImgUrl, sizes: '384x384', type: 'image/png' },
+      { src: finalImgUrl, sizes: '512x512', type: 'image/png' }
     ]
   });
 
