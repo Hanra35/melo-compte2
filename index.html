@@ -2017,6 +2017,13 @@ function togglePlay(){
   updatePlayBtns();renderHome();renderPlDetail();
 }
 function toggleLike(){var t=tracks[cur];if(!t) return;var fav=playlists.find(p=>p._favoris);if(liked.has(t.id)){liked.delete(t.id);document.querySelector('#like-btn svg').style.fill='var(--sub)';if(fav){fav.trackIds=fav.trackIds.filter(id=>id!==t.id);saveMeta();}}else{liked.add(t.id);document.querySelector('#like-btn svg').style.fill='#ff4d4d';if(fav&&!fav.trackIds.includes(t.id)){fav.trackIds.push(t.id);saveMeta();}}renderPlScreen();}
+function getNextIdx(){var q=getQ();if(!q.length) return null;if(isShuffle){var i;do{i=Math.floor(Math.random()*q.length);}while(q.length>1&&tracks.indexOf(q[i])===cur);return tracks.indexOf(q[i]);}var ci=q.findIndex(t=>tracks.indexOf(t)===cur);return tracks.indexOf(q[(ci+1)%q.length]);}
+function getPrevIdx(){var q=getQ();if(!q.length) return null;var ci=q.findIndex(t=>tracks.indexOf(t)===cur);return tracks.indexOf(q[(ci-1+q.length)%q.length]);}
+function goNext(){if(repeatMode===2){aud.currentTime=0;aud.play();return;}var i=getNextIdx();if(i!==null) playAt(i);}
+function goPrev(){if(aud.currentTime>3){aud.currentTime=0;return;}var i=getPrevIdx();if(i!==null) playAt(i);}
+function toggleShuffle(){isShuffle=!isShuffle;document.getElementById('pc-shuf').classList.toggle('on',isShuffle);}
+function toggleRepeat(){repeatMode=(repeatMode+1)%3;document.getElementById('pc-rep').classList.toggle('on',repeatMode>0);document.getElementById('pc-repdot').style.display=repeatMode>0?'block':'none';document.getElementById('pc-repico').innerHTML=repeatMode===2?'<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/>':'<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>';}
+function setVol(v){volume=parseFloat(v);aud.volume=volume;}
 
 function updatePlayBtns(){var p=isPlaying?'M6 19h4V5H6v14zm8-14v14h4V5h-4z':'M8 5v14l11-7z';document.getElementById('pc-ico').innerHTML=`<path d="${p}"/>`;document.getElementById('mp-ico').innerHTML=`<path d="${p}"/>`;}
 function updateMiniPlayer(){
