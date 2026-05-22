@@ -139,7 +139,7 @@ module.exports = async (req, res) => {
     const bid = await getBucketId(a);
 
     if (action === 'init') {
-      await fixCors(a, bid);
+      // fixCors retiré — trop lent, causait des timeouts
       const meta = await readLatestMeta(a, bid);
       const dlR = await fetch(`${a.apiUrl}/b2api/v2/b2_get_download_authorization`, {
         method: 'POST',
@@ -180,7 +180,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (action === 'save-meta' && req.method === 'POST') {
+    if (action === 'save-meta') {
       const body = req.body;
       const tracks       = Array.isArray(body?.tracks)    ? body.tracks    : (Array.isArray(body) ? body : []);
       const playlists    = Array.isArray(body?.playlists)  ? body.playlists : [];
@@ -214,4 +214,13 @@ module.exports = async (req, res) => {
     console.error('api error:', e.message);
     res.status(500).json({ error: e.message });
   }
+};
+
+// Indique à Vercel de parser le body JSON automatiquement jusqu'à 50mb
+module.exports.config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
 };
