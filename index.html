@@ -1230,16 +1230,15 @@ async function autoFetchLyrics(trackId){
 
     } else {
       /* ── ÉTAPE 3 : Fallback IA avec web search ── */
-        setStatus('⚡ Non trouvé, génération par IA...');
-        var lrcFromAI2=await generateLrcWithAI(t.name, t.artist, null);
-        var ta2=document.getElementById('lrc-ta');
-        if(ta2) ta2.value=lrcFromAI2;
-        var nb3=(lrcFromAI2.match(/\[\d+:\d+/g)||[]).length;
-        if(nb3>3){
-          setStatus('✓ '+nb3+' lignes générées par IA. Timestamps approximatifs.','#f59e0b');
-        } else {
-          setStatus('⚠️ Paroles introuvables pour cette chanson.','#ff4d4d');
-        }
+      setStatus('⚡ Non trouvé, génération par IA...');
+      var lrcFromAI2=await generateLrcWithAI(t.name, t.artist, null);
+      var ta2=document.getElementById('lrc-ta');
+      if(ta2) ta2.value=lrcFromAI2;
+      var nb3=(lrcFromAI2.match(/\[\d+:\d+/g)||[]).length;
+      if(nb3>3){
+        setStatus('✓ '+nb3+' lignes générées par IA. Timestamps approximatifs.','#f59e0b');
+      } else {
+        setStatus('⚠️ Paroles introuvables pour cette chanson.','#ff4d4d');
       }
     }
 
