@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1388,7 +1389,7 @@ function gotoNav(name){
 
 /* CACHE DISABLED - STREAMING ONLY */
 var rawUrl=key=>'/api/api?action=stream&key='+encodeURIComponent(key);
-function resolveImgUrl(imgUrl){if(!imgUrl) return '';if(imgUrl.startsWith('covers/')||imgUrl.startsWith('tracks/')) return rawUrl(imgUrl);var bucketPath='/file/'+BUCKET+'/';var idx=imgUrl.indexOf(bucketPath);if(idx!==-1){var afterBucket=imgUrl.slice(idx+bucketPath.length);var key=decodeURIComponent(afterBucket.split('?')[0]);if(key) return rawUrl(key);}return imgUrl;}
+function resolveImgUrl(imgUrl){if(!imgUrl) return '';if(imgUrl.startsWith('data:')) return imgUrl;if(imgUrl.startsWith('covers/')||imgUrl.startsWith('tracks/')) return rawUrl(imgUrl);var bucketPath='/file/'+BUCKET+'/';var idx=imgUrl.indexOf(bucketPath);if(idx!==-1){var afterBucket=imgUrl.slice(idx+bucketPath.length);var key=decodeURIComponent(afterBucket.split('?')[0]);if(key) return rawUrl(key);}if(imgUrl.startsWith('http')) return imgUrl;return rawUrl(imgUrl);}
 // iOS : URL B2 directe avec token — évite le proxy Vercel pour un chargement instantané
 var directUrl=key=>dlUrl+'/file/'+BUCKET+'/'+key.split('/').map(encodeURIComponent).join('/')+'?Authorization='+encodeURIComponent(dlToken);
 
@@ -1409,6 +1410,16 @@ async function saveMeta(){
     notify('⚠️ Sauvegarde B2 échouée — données conservées localement');
     // Ne propage pas l'erreur : localStorage a déjà sauvegardé
   }
+}
+
+/* ── artistNamesHtml : rend les noms d'artistes cliquables (multi-artistes) ── */
+function artistNamesHtml(artist){
+  if(!artist||artist==='Artiste inconnu') return '<span style="color:var(--sub)">Artiste inconnu</span>';
+  var parts=artist.split(/[,&\/]/).map(function(s){return s.trim();}).filter(Boolean);
+  if(parts.length<=1) return '<span onclick="event.stopPropagation();openArtistByName(\''+artist.replace(/'/g,"\\'")+'\')" style="cursor:pointer">'+esc(artist)+'</span>';
+  return parts.map(function(name){
+    return '<span onclick="event.stopPropagation();openArtistByName(\''+name.replace(/'/g,"\\'")+'\');" style="cursor:pointer">'+esc(name)+'</span>';
+  }).join(', ');
 }
 
 /* SONG ROW */
@@ -2831,6 +2842,13 @@ function refreshCurrentScreen(){
   updateMiniPlayer();
   if(activeScreen==='player') updatePlayerScreen();
 }
+// Supprime les erreurs 404 d'images dans la console (images absentes du bucket)
+document.addEventListener('error', function(e){
+  if(e.target && e.target.tagName === 'IMG'){
+    e.target.style.display = 'none';
+  }
+}, true);
+
 init();
 
 /* ════════════════════════════════════════
