@@ -2012,16 +2012,26 @@ async function playAt(idx){
 }
 
 function togglePlay(){
-  
-  else{liked.add(t.id);document.querySelector('#like-btn svg').style.fill='#ff4d4d';if(fav&&!fav.trackIds.includes(t.id)){fav.trackIds.push(t.id);saveMeta();}}renderPlScreen();}
+  if(cur===null)return;
+  if(isPlaying){aud.pause();isPlaying=false;}else{aud.play().catch(()=>{});isPlaying=true;}
+  updatePlayBtns();renderHome();renderPlDetail();
+}
+function toggleLike(){var t=tracks[cur];if(!t) return;var fav=playlists.find(p=>p._favoris);if(liked.has(t.id)){liked.delete(t.id);document.querySelector('#like-btn svg').style.fill='var(--sub)';if(fav){fav.trackIds=fav.trackIds.filter(id=>id!==t.id);saveMeta();}}else{liked.add(t.id);document.querySelector('#like-btn svg').style.fill='#ff4d4d';if(fav&&!fav.trackIds.includes(t.id)){fav.trackIds.push(t.id);saveMeta();}}renderPlScreen();}
 
 function updatePlayBtns(){var p=isPlaying?'M6 19h4V5H6v14zm8-14v14h4V5h-4z':'M8 5v14l11-7z';document.getElementById('pc-ico').innerHTML=`<path d="${p}"/>`;document.getElementById('mp-ico').innerHTML=`<path d="${p}"/>`;}
 function updateMiniPlayer(){
   var mp=document.getElementById('mini-player');
   if(!mp) return;
-  ;
-  img.onerror = ()=>cb(null);
-  img.src = imgUrl;
+  if(cur===null){mp.classList.remove('show');return;}
+  var t=tracks[cur],h=t.hue||hue(t.name);
+  mp.classList.add('show');
+  var mpArt=document.getElementById('mp-art');
+  var imgSrc=resolveImgUrl(t.imgUrl);
+  if(imgSrc){mpArt.style.background='';mpArt.style.backgroundImage="url('"+imgSrc+"')";mpArt.style.backgroundSize='cover';mpArt.style.backgroundPosition='center';mpArt.innerHTML='';}
+  else{mpArt.style.backgroundImage='';mpArt.style.background=abg(h);mpArt.innerHTML=noteIco(18,'rgba(255,255,255,.8)');}
+  document.getElementById('mp-name').textContent=t.name;
+  document.getElementById('mp-artist').textContent=t.artist;
+  updatePlayBtns();
 }
 
 function applyPlayerColor(rgb){
