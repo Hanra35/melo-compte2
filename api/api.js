@@ -209,6 +209,55 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── ACTION STREAM ──────────────────────────────────────────────────────────
+    // Proxy le fichier B2 (audio ou image) vers le client.
+    // Supporte les Range requests pour le streaming audio progressif.
+    if (action === 'stream') {
+      const key = req.query.key;
+      if (!key) { res.status(400).json({ error: 'Paramètre key manquant' }); return; }
+
+      const fileUrl = `${a.downloadUrl}/file/${BUCKET}/${key.split('/').map(encodeURIComponent).join('/')}`;
+      const headers = { Authorization: a.authorizationToken };
+
+      // Transmettre le header Range si présent (streaming progressif)
+      if (req.headers.range) headers['Range'] = req.headers.range;
+
+      const upstream = await fetch(fileUrl, { headers });
+
+      if (!upstream.ok && upstream.status !== 206) {
+        res.status(upstream.status).json({ error: 'Fichier introuvable dans B2' });
+        return;
+      }
+
+      // Copier les headers importants vers le client
+      const copyHeaders = [
+        'content-type', 'content-length', 'content-range',
+        'accept-ranges', 'last-modified', 'etag'
+      ];
+      copyHeaders.forEach(h => {
+        const v = upstream.headers.get(h);
+        if (v) res.setHeader(h, v);
+      });
+
+      // Autoriser la mise en cache navigateur (24h)
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      res.status(upstream.status);
+
+      // Streamer le body au client
+      const reader = upstream.body.getReader();
+      const write = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) { res.end(); break; }
+          res.write(Buffer.from(value));
+        }
+      };
+      await write();
+      return;
+    }
+
     res.status(404).json({ error: 'Action inconnue' });
   } catch (e) {
     console.error('api error:', e.message);
