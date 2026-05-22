@@ -1388,6 +1388,7 @@ function gotoNav(name){
 
 /* CACHE DISABLED - STREAMING ONLY */
 var rawUrl=key=>'/api/api?action=stream&key='+encodeURIComponent(key);
+function resolveImgUrl(imgUrl){if(!imgUrl) return '';if(imgUrl.startsWith('covers/')||imgUrl.startsWith('tracks/')) return rawUrl(imgUrl);var bucketPath='/file/'+BUCKET+'/';var idx=imgUrl.indexOf(bucketPath);if(idx!==-1){var afterBucket=imgUrl.slice(idx+bucketPath.length);var key=decodeURIComponent(afterBucket.split('?')[0]);if(key) return rawUrl(key);}return imgUrl;}
 // iOS : URL B2 directe avec token — évite le proxy Vercel pour un chargement instantané
 var directUrl=key=>dlUrl+'/file/'+BUCKET+'/'+key.split('/').map(encodeURIComponent).join('/')+'?Authorization='+encodeURIComponent(dlToken);
 
